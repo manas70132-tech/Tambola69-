@@ -1,0 +1,29 @@
+name: Firebase Deploy - Point Break Adventure
+
+on:
+  push:
+    branches:
+      - main  # Aapke main branch ka naam
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install Firebase CLI
+      run: npm install -g firebase-tools
+
+    - name: Deploy to Firebase Hosting
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      run: |
+        echo "🔹 Deploying Point Break Adventure website..."
+        firebase deploy --only hosting
