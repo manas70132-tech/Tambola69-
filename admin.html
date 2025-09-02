@@ -62,8 +62,6 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
 </script>
 /* Top-level refs */
 const currentGameRef = db.ref('currentGame');
