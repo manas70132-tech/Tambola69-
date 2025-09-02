@@ -47,20 +47,25 @@
 
 <script>
 /* =======================
+   
+/* =======================
    Put your Firebase config here
    ======================= */
 var firebaseConfig = {
   apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
   authDomain: "tambola69-9dc8f.firebaseapp.com",
-  databaseURL: "https://tambola69-9dc8f.firebaseio.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
   projectId: "tambola69-9dc8f",
   storageBucket: "tambola69-9dc8f.appspot.com",
   messagingSenderId: "413290158586",
   appId: "1:413290158586:web:70fff2d94b29206487ec43"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Database reference
+var db = firebase.database();
 /* Top-level refs */
 const currentGameRef = db.ref('currentGame');
 const nextGameRef = db.ref('nextGame');
