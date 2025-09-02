@@ -1,6 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tambola Admin Panel</title>
+  <style>
+    body { font-family: Arial; background:#111; color:#fff; text-align:center; padding:20px; }
+    input { padding:8px; border-radius:6px; }
+    button { padding:8px 16px; margin:5px; }
+    ul { list-style:none; padding:0; }
+  </style>
+</head>
+<body>
+  <h2>Tambola Admin Panel</h2>
+
+  <input id="numberInput" placeholder="Enter Number" />
+  <br><br>
+  <button id="saveBtn">Save Number</button>
+  <button id="loadBtn">Load Numbers</button>
+
+  <ul id="numberList"></ul>
+
+  <script type="module">
+    // 🔹 Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    // 🔹 Your Firebase Config – इसे अपने Firebase project के details से replace करो
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const numbersRef = collection(db, "numbers");
+
+    // Save number
+    async function saveNumber() {
+      const number = document.getElementById("numberInput").value;
+      if (!number) { alert("Enter a number!"); return; }
+      await addDoc(numbersRef, { value: number, timestamp: new Date() });
+      alert("Saved: " + number);
+      document.getElementById("numberInput").value = "";
+    }
+
+    // Load numbers
+    async function loadNumbers() {
+      const list = document.getElementById("numberList");
+      list.innerHTML = "";
+      const snapshot = await getDocs(numbersRef);
+      snapshot.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = `Number: ${doc.data().value}`;
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById("saveBtn").addEventListener("click", saveNumber);
+    document.getElementById("loadBtn").addEventListener("click", loadNumbers);
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Tambola 69 - Full Admin Panel</title>
