@@ -1,0 +1,43 @@
+# Node modules
+node_modules/
+
+# Firebase cache & logs
+.firebase/
+.firebase.json
+.firebaserc
+firebase-debug.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE/editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output (if any)
+dist/
+build/
+
+# OS generated files
+*.bak
+*.tmp
+*.temp
+
+# Optional environment files
+.env
+.env.local
+.env.*.local
+
+# Ignore personal scripts or credentials
+secret.js
