@@ -1,19 +1,12 @@
 {
   "hosting": {
-    "public": "public",
+    "public": ".",
     "rewrites": [
-      { "source": "/admin", "destination": "/admin/admin.html" }
+      { "source": "/admin", "destination": "/admin.html" },
+      { "source": "**", "destination": "/index.html" }
     ],
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
-  }
-}
-{
-  "rules": {
-    ".read": true,
-    ".write": true
-  }
-}
-{
+  },
   "projects": {
     "default": "tambola69-9dc8f"
   }
