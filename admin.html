@@ -3,6 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambola 69 - User App</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #111; color: #fff; text-align:center; padding:20px; }
+  h1,h2 { color: orange; margin:10px 0; }
+  .board { display:grid; grid-template-columns: repeat(9, 1fr); gap:5px; max-width:600px; margin:auto; }
+  .cell { padding:15px; border:1px solid #fff; border-radius:5px; background:#222; cursor:pointer; }
+  .tick { background: green; color:#fff; font-weight:bold; }
+  #lastNumber { font-size:24px; color:yellow; }
+  #winner { font-size:20px; color:lime; margin-top:20px; }
+</style>
+</head>
+<body>
+<h1>Tambola 69 - User App</h1>
+<h2>Last Drawn Number: <span id="lastNumber">-</span></h2>
+
+<div class="board" id="board"></div>
+<div id="winner"></div>
+
+<script>
+  const boardSize = 90;
+  let drawnNumbers = [];
+  let userBoard = [];
+
+  // Initialize user board (random 15 numbers)
+  while(userBoard.length < 15){
+    const n = Math.floor(Math.random()*boardSize)+1;
+    if(!userBoard.includes(n)) userBoard.push(n);
+  }
+
+  const boardDiv = document.getElementById("board");
+  userBoard.forEach(num => {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.id = "cell"+num;
+    cell.innerText = num;
+    boardDiv.appendChild(cell);
+  });
+
+  // Simulate Firebase Listener (replace with actual Firebase listener)
+  function listenDrawnNumbers(newNum){
+    drawnNumbers.push(newNum);
+    document.getElementById("lastNumber").innerText = newNum;
+    // Auto tick user board
+    if(userBoard.includes(newNum)){
+      document.getElementById("cell"+newNum).classList.add("tick");
+      // Optional: AI voice
+      const utter = new SpeechSynthesisUtterance(newNum.toString());
+      speechSynthesis.speak(utter);
+    }
+    checkWinner();
+  }
+
+  function checkWinner(){
+    const ticked = userBoard.filter(n => drawnNumbers.includes(n));
+    if(ticked.length === 15){
+      document.getElementById("winner").innerText = "🎉 Congratulations! You completed your board! 🎉";
+      // Optional: Send notification to Firebase
+    }
+  }
+
+  // TEST MODE: Simulate Admin Draw every 2 sec (remove when connecting Firebase)
+  let testNum=0;
+  const testInterval = setInterval(()=>{
+    testNum++;
+    if(testNum>90) clearInterval(testInterval);
+    listenDrawnNumbers(testNum);
+  },2000);
+
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tambola 69 - Admin Panel</title>
 <style>
   body { font-family: Arial, sans-serif; background: #111; color: #fff; margin:0; padding:0; }
