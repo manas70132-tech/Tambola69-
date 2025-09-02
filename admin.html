@@ -64,11 +64,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-
-  // Example button click test
-  document.getElementById("myBtn").addEventListener("click", () => {
-    alert("Button working!");
-  });
 </script>
 /* Top-level refs */
 const currentGameRef = db.ref('currentGame');
