@@ -1,6 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambola Admin Panel</title>
+<style>
+  body { font-family: Arial; background:#111; color:#fff; text-align:center; padding:20px; }
+  input { padding:8px; border-radius:6px; }
+  button { padding:8px 16px; margin:5px; }
+  ul { list-style:none; padding:0; margin-top:20px; }
+</style>
+</head>
+<body>
+<h2>Tambola Admin Panel</h2>
+
+<input id="numberInput" placeholder="Enter Number" />
+<br><br>
+<button id="saveBtn">Save Number</button>
+<button id="loadBtn">Load Numbers</button>
+
+<ul id="numberList"></ul>
+
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+<script>
+  // 🔹 Firebase Config – अपने Firebase keys डालो
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // Init Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const numbersRef = db.collection("numbers");
+
+  // Save number
+  document.getElementById("saveBtn").onclick = async () => {
+    const number = document.getElementById("numberInput").value;
+    if (!number) { alert("Enter a number!"); return; }
+    await numbersRef.add({ value: number, timestamp: new Date() });
+    alert("Saved: " + number);
+    document.getElementById("numberInput").value = "";
+  };
+
+  // Load numbers
+  document.getElementById("loadBtn").onclick = async () => {
+    const snapshot = await numbersRef.orderBy("timestamp").get();
+    const list = document.getElementById("numberList");
+    list.innerHTML = "";
+    snapshot.forEach(doc => {
+      const li = document.createElement("li");
+      li.textContent = "Number: " + doc.data().value;
+      list.appendChild(li);
+    });
+  };
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tambola Admin Panel</title>
