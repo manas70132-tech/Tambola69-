@@ -36,3 +36,12 @@ gameRef.on("value", (snapshot) => {
     // Status update
     statusContainer.textContent = `Game Status: ${data.status}`;
 });
+const db = firebase.firestore();
+
+db.collection("games").doc("current")
+  .onSnapshot(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      document.getElementById("gameDisplay").innerText = `Current Game: ${data.name}`;
+    }
+  });
