@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f0f8ff;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        /* 404 Number */
+        h1 {
+            font-size: 8rem;
+            color: #ff5722;
+            margin-bottom: 20px;
+        }
+
+        /* Message */
+        p {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+
+        /* Button */
+        a {
+            text-decoration: none;
+            padding: 12px 25px;
+            background-color: #ff5722;
+            color: #fff;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        a:hover {
+            background-color: #e64a19;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 5rem;
+            }
+
+            p {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>404</h1>
+    <p>Oops! Page not found.</p>
+    <a href="/user/index.html">Go to Home</a>
+</body>
+</html>
