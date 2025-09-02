@@ -1,1 +1,14 @@
-firebase deploy --token "YOUR_TOKEN_HERE"
+{
+  "hosting": [
+    {
+      "target": "admin",
+      "public": "admin",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+    },
+    {
+      "target": "user",
+      "public": "user",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+    }
+  ]
+}firebase deploy --token "YOUR_TOKEN_HERE"
