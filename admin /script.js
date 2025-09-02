@@ -1,4 +1,17 @@
-// 1️⃣ Firebase config
+function startGame(){
+  db.ref("game/current").set({
+    started: true,
+    numbers: [],
+    timestamp: Date.now()
+  });
+  document.getElementById("status").innerText = "Game started ✅";
+}
+
+function publishNumber(){
+  const newNum = Math.floor(Math.random() * 90) + 1;
+  db.ref("game/current/numbers").push(newNum);
+  document.getElementById("status").innerText = "Published number: " + newNum;
+}// 1️⃣ Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
   authDomain:tambola69-9dc8f.firebaseapp.com
