@@ -3,6 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambola 69 - Admin Panel</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #111; color: #fff; margin:0; padding:0; }
+  header { background: #222; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { margin:0; font-size: 20px; color: orange; }
+  main { padding: 20px; }
+  .section { margin-bottom: 30px; }
+  button { padding: 10px 15px; margin: 5px; cursor: pointer; background: orange; border: none; color: #111; border-radius: 5px; }
+  input, select { padding: 8px; margin: 5px; border-radius: 5px; border: none; }
+  .winner-list { background: #222; padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto; }
+</style>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Tambola 69 Admin Panel</h1>
+  <button onclick="logout()">Logout</button>
+</header>
+
+<main>
+
+  <div class="section">
+    <h2>Start / Stop Game</h2>
+    <button onclick="startGame()">Start Game</button>
+    <button onclick="stopGame()">Stop Game</button>
+  </div>
+
+  <div class="section">
+    <h2>Draw Number</h2>
+    <button onclick="drawNumber()">Draw Next Number</button>
+    <p>Last Drawn: <span id="lastNumber">--</span></p>
+  </div>
+
+  <div class="section">
+    <h2>Top 10 Winners</h2>
+    <div class="winner-list" id="winnerList"></div>
+  </div>
+
+  <div class="section">
+    <h2>Notifications</h2>
+    <input type="text" id="notifMsg" placeholder="Enter message">
+    <button onclick="sendNotification()">Send</button>
+  </div>
+
+</main>
+
+<script>
+  // Firebase Config - Replace with your own
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    databaseURL: "YOUR_DATABASE_URL",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // Initialize Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const auth = firebase.auth();
+
+  // Auth - simple email login for admin
+  auth.signInWithEmailAndPassword("admin@example.com", "admin123").catch(console.error);
+
+  function logout(){
+    auth.signOut();
+    alert("Logged out");
+  }
+
+  let gameActive = false;
+  let drawnNumbers = [];
+
+  function startGame(){
+    gameActive = true;
+    drawnNumbers = [];
+    db.ref('game/status').set({active: true, drawnNumbers: drawnNumbers});
+    alert("Game Started");
+  }
+
+  function stopGame(){
+    gameActive = false;
+    db.ref('game/status').set({active: false});
+    alert("Game Stopped");
+  }
+
+  function drawNumber(){
+    if(!gameActive){
+      alert("Start the game first!");
+      return;
+    }
+    let nextNumber;
+    do {
+      nextNumber = Math.floor(Math.random() * 90) + 1;
+    } while(drawnNumbers.includes(nextNumber));
+    drawnNumbers.push(nextNumber);
+    document.getElementById('lastNumber').innerText = nextNumber;
+    db.ref('game/status/drawnNumbers').set(drawnNumbers);
+  }
+
+  // Winners Example
+  db.ref('winners').on('value', snapshot => {
+    const list = document.getElementById('winnerList');
+    list.innerHTML = '';
+    const winners = snapshot.val() || {};
+    Object.keys(winners).forEach(key => {
+      const div = document.createElement('div');
+      div.innerText = `${winners[key].name} - ₹${winners[key].prize}`;
+      list.appendChild(div);
+    });
+  });
+
+  function sendNotification(){
+    const msg = document.getElementById('notifMsg').value;
+    if(msg){
+      db.ref('notifications').push({message: msg, timestamp: Date.now()});
+      document.getElementById('notifMsg').value = '';
+      alert("Notification sent");
+    }
+  }
+
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tambola 69</title>
 <style>
 body{font-family:Arial;background:#111;color:#fff;text-align:center;margin:0;padding:0;}
