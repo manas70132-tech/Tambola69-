@@ -1,4 +1,46 @@
-import { db } "./
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tambola User App</title>
+</head>
+<body style="font-family: Arial; background:#222; color:#fff; text-align:center; padding:20px;">
+  <h2>Tambola User Screen</h2>
+  <ul id="liveNumbers" style="list-style:none; font-size:20px; padding:0;"></ul>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    // 🔹 Your Firebase Config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const numbersRef = collection(db, "numbers");
+    const q = query(numbersRef, orderBy("timestamp", "asc"));
+
+    const list = document.getElementById("liveNumbers");
+    onSnapshot(q, (snapshot) => {
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = `Number: ${doc.data().value}`;
+        list.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>import { db } "./
 firebase-config.js";
 <!DOCTYPE html>
 <html lang="en">
