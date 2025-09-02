@@ -1,6 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambola User App</title>
+<style>
+  body { font-family: Arial; background:#222; color:#fff; text-align:center; padding:20px; }
+  ul { list-style:none; padding:0; margin-top:20px; font-size:20px; }
+</style>
+</head>
+<body>
+<h2>Tambola User Screen</h2>
+<p>Numbers drawn by Admin:</p>
+<ul id="liveNumbers"></ul>
+
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+<script>
+  // 🔹 Firebase Config – अपने Firebase keys डालो
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // Init Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const numbersRef = db.collection("numbers");
+
+  // Live listener
+  numbersRef.orderBy("timestamp").onSnapshot(snapshot => {
+    const list = document.getElementById("liveNumbers");
+    list.innerHTML = "";
+    snapshot.forEach(doc => {
+      const li = document.createElement("li");
+      li.textContent = "Number: " + doc.data().value;
+      list.appendChild(li);
+    });
+  });
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tambola User App</title>
