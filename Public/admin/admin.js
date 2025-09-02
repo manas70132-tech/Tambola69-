@@ -49,3 +49,18 @@ document.getElementById('updateBtn').addEventListener('click', function() {
           alert("Error: " + error.message);
       });
 });
+const db = firebase.firestore();
+
+// Example: Add new game update
+function pushUpdate(gameData) {
+  db.collection("games").doc("current").set(gameData)
+    .then(() => alert("Update sent!"))
+    .catch(err => console.error(err));
+}
+
+// Example usage: admin form submit
+document.getElementById("updateForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const gameName = document.getElementById("gameName").value;
+  pushUpdate({ name: gameName, timestamp: Date.now() });
+});
