@@ -5,11 +5,30 @@
 <title>Tambola 69 - User</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- Firebase v8 -->
+
+<!-- Firebase Libraries -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="js/firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+<!-- Firebase Config JSON -->
+<script>
+    const firebaseConfig = {
+  apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+  authDomain: "tambola69-9dc8f.firebaseapp.com",
+  databaseURL: "https://tambola69-9dc8f.firebaseio.com",
+  projectId: "tambola69-9dc8f",
+  storageBucket: "tambola69-9dc8f.appspot.com",
+  messagingSenderId: "413290158586",
+  appId: "1:413290158586:web:70fff2d94b29206487ec43"
+};
+  
+  firebase.initializeApp(firebaseConfig);
+</script>
+
+<!-- Your JS -->
+<script src="admin.js"></script>  <!-- for admin.html -->
+<script src="userscript.js"></script>  <!-- for index.html -->
   <script src="main.js"></script>
 
 <style>
@@ -356,18 +375,6 @@
 </div>
 
 <script>
-/* ================= Firebase Init (REPLACE WITH YOUR CONFIG) ================= */
-const firebaseConfig = {
-  apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
-  authDomain: "tambola69-9dc8f.firebaseapp.com",
-  databaseURL: "https://tambola69-9dc8f.firebaseio.com",
-  projectId: "tambola69-9dc8f",
-  storageBucket: "tambola69-9dc8f.appspot.com",
-  messagingSenderId: "413290158586",
-  appId: "1:413290158586:web:70fff2d94b29206487ec43"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 
 /* ================= Elements ================= */
 const boardEl = document.getElementById('board');
