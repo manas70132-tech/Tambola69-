@@ -4,6 +4,28 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Tambola 69 - Full Admin Panel</title>
+  <!-- Firebase Libraries -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+<!-- Firebase Config JSON -->
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+    authDomain: "tambola69-9dc8f.firebaseapp.com",
+    databaseURL: "https://console.firebase.google.com/u/0/project/tambola69-9dc8f/database/tambola69-9dc8f-default-rtdb/data/~2F",
+    projectId: "tambola69-9dc8f",
+    storageBucket: "tambola69-9dc8f.firebasestorage.app",
+    messagingSenderId: "413290158586",
+    appId: "1:413290158586:web:70fff2d94b29206487ec43"
+  };
+  firebase.initializeApp(firebaseConfig);
+</script>
+
+<!-- Your JS -->
+<script src="admin.js"></script>  <!-- for admin.html -->
+<script src="userscript.js"></script>  <!-- for index.html -->
 <style>
   body { font-family: Arial, Helvetica, sans-serif; background: #111; color: #fff; text-align: center; padding: 18px; }
   h1,h2,h3 { color: orange; margin: 10px 0; }
