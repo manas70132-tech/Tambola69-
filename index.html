@@ -1,8 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Tambola 69 - User</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tambola User App</title>
+</head>
+<body style="background:#222;color:#fff;text-align:center;padding:20px;">
+  <h1>Tambola User App</h1>
+  <h2 id="currentNumber">Waiting for draw...</h2>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <script>
+    // 🔹 Yaha bhi wahi Firebase config paste karo jo Admin me dala hai
+    const firebaseConfig = {
+  apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+  authDomain: "tambola69-9dc8f.firebaseapp.com",
+  projectId: "tambola69-9dc8f",
+  storageBucket: "tambola69-9dc8f.firebasestorage.app",
+  messagingSenderId: "413290158586",
+  appId: "1:413290158586:web:70fff2d94b29206487ec43",
+  measurementId: "G-6WJNDX5DGB"
+};
+
+    // Live number listen
+    db.ref("game/currentNumber").on("value", (snapshot) => {
+      const num = snapshot.val();
+      if (num !== null) {
+        document.getElementById("currentNumber").innerText = "Current Number: " + num;
+      }
+    });
+  </script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <!-- Firebase v8 -->
