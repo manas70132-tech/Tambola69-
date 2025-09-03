@@ -29,5 +29,29 @@
       document.getElementById("result").innerText = "Number Drawn: " + num;
     }
   </script>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+    authDomain: "tambola69-9dc8f.firebaseapp.com",
+    databaseURL: "https://tambola69-9dc8f.firebaseio.com",
+    projectId: "tambola69-9dc8f",
+    storageBucket: "tambola69-9dc8f.appspot.com",
+    messagingSenderId: "413290158586",
+    appId: "1:413290158586:web:70fff2d94b29206487ec43"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  function draw(){
+    let num = document.getElementById("drawNumber").value;
+    set(ref(db, "drawnNumber"), { number: num });
+  }
+
+  window.draw = draw;
+  </script>
 </body>
 </html>
