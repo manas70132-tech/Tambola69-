@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambola69</title>
+<style>
+  /* Simple styling, आप इसे assets/style.css में भी रख सकते हैं */
+  body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0;}
+  #menuPanel { display:none; background:#333; color:#fff; padding:10px; position:absolute; top:40px; right:10px; border-radius:5px;}
+  #menuPanel.show { display:block;}
+  button { padding:8px 12px; margin:5px;}
+  #ticket { display:grid; grid-template-columns: repeat(9, 40px); grid-gap:3px; margin:10px 0;}
+  .ticket-cell { width:40px; height:40px; display:flex; align-items:center; justify-content:center; border:1px solid #999; background:#fff;}
+  .ticket-cell.ticked { background: #4caf50; color:#fff; }
+  .highlight { background:#ffeb3b !important; }
+</style>
+</head>
+<body>
+
+<h1>Tambola69 - Point Break Adventure</h1>
+
+<!-- Hamburger Menu -->
+<div id="menuToggle">☰ Menu</div>
+<div id="menuPanel">
+  <button id="viewProfileBtn">Profile देखें</button>
+  <button id="withdrawBtn">Withdraw</button>
+</div>
+
+<!-- Login / Details -->
+<div id="detailsStep" style="display:none;">
+  <input id="nameInput" placeholder="Name">
+  <input id="emailInput" placeholder="Email">
+  <button id="saveDetailsBtn">Save Details</button>
+</div>
+
+<!-- OTP -->
+<div id="otpStep">
+  <input id="phoneInput" placeholder="Phone +91XXXXXXXXXX">
+  <div id="recaptcha-container"></div>
+  <button id="sendOtpBtn">Send OTP</button>
+  <input id="otpInput" placeholder="Enter OTP">
+  <button id="verifyOtpBtn">Verify OTP</button>
+</div>
+
+<!-- Winnings -->
+<p>My Balance: ₹<span id="myWinnings">0</span></p>
+
+<!-- Room System -->
+<div>
+  <input id="joinRoomIdInput" placeholder="Enter Room ID">
+  <button id="createRoomBtn">Create Room</button>
+  <button id="joinRoomBtn">Join Room</button>
+  <button id="roomBuyTicketBtn" style="display:none;">Buy Ticket</button>
+  <button id="startRoomGameBtn" style="display:none;">Start Game</button>
+  <p id="roomInfoEl"></p>
+  <p id="roomStatusPill">No Room</p>
+  <p id="waitingLiveText"></p>
+  <p id="waitingTitle"></p>
+  <p id="waitingDesc"></p>
+</div>
+
+<!-- Ticket -->
+<div id="userTicketContainer">
+  <div id="ticket"></div>
+</div>
+
+<!-- Draw -->
+<p id="latestNumber">—</p>
+<p id="historyEl">None</p>
+
+<!-- Withdraw Modal -->
+<div id="withdrawModal" style="display:none;">
+  <input id="withdrawAmount" placeholder="Amount">
+  <input id="withdrawDest" placeholder="UPI / Phone">
+  <button id="submitWithdrawBtn">Submit</button>
+  <button id="cancelWithdrawBtn">Cancel</button>
+</div>
+
+<!-- Live Video -->
+<button id="watchLiveBtn">Watch Live</button>
+<div id="liveVideoBox" style="display:none;">
+  <iframe id="liveFrame" width="560" height="315" frameborder="0" allowfullscreen></iframe>
+</div>
+
+<!-- Music Player -->
+<button id="musicBtn">Music</button>
+<audio id="player" controls style="display:none;"></audio>
+
+<!-- JS -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+// ================= Firebase Config =================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  databaseURL: "YOUR_DB_URL",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const presenceRef = db.ref('presence');
+const musicRef = db.ref('music');
+
+const LS_UID='uid', LS_NAME='name', LS_CONTACT='contact', LS_EMAIL='email';
+let myName='', myEmail='', myContact='', userId='', myPresence=null, currentGrid=null;
+let autoTickToggle={checked:true}, autoClaimToggle={checked:true};
+let activeRoom=null, isHost=false, drawTimer=null;
+const ROOM_STATUS={WAIT:'wait',START:'start',END:'end'};
+const DRAW_INTERVAL_MS=3000;
+
+const menuToggleEl=document.getElementById('menuToggle');
+const menuPanelEl=document.getElementById('menuPanel');
+const viewProfileBtn=document.getElementById('viewProfileBtn');
+const detailsStep=document.getElementById('detailsStep');
+const nameInput=document.getElementById('nameInput');
+const emailInput=document.getElementById('emailInput');
+const saveDetailsBtn=document.getElementById('saveDetailsBtn');
+const phoneInput=document.getElementById('phoneInput');
+const otpInput=document.getElementById('otpInput');
+const sendOtpBtn=document.getElementById('sendOtpBtn');
+const verifyOtpBtn=document.getElementById('verifyOtpBtn');
+const myWinnings=document.getElementById('myWinnings');
+const createRoomBtn=document.getElementById('createRoomBtn');
+const joinRoomBtn=document.getElementById('joinRoomBtn');
+const roomBuyTicketBtn=document.getElementById('roomBuyTicketBtn');
+const startRoomGameBtn=document.getElementById('startRoomGameBtn');
+const joinRoomIdInput=document.getElementById('joinRoomIdInput');
+const roomInfoEl=document.getElementById('roomInfoEl');
+const roomStatusPill=document.getElementById('roomStatusPill');
+const waitingLiveText=document.getElementById('waitingLiveText');
+const waitingTitle=document.getElementById('waitingTitle');
+const waitingDesc=document.getElementById('waitingDesc');
+const userTicketContainer=document.getElementById('userTicketContainer');
+const ticketEl=document.getElementById('ticket');
+const latestNumber=document.getElementById('latestNumber');
+const historyEl=document.getElementById('historyEl');
+const withdrawBtn=document.getElementById('withdrawBtn');
+const withdrawModal=document.getElementById('withdrawModal');
+const withdrawAmount=document.getElementById('withdrawAmount');
+const withdrawDest=document.getElementById('withdrawDest');
+const submitWithdrawBtn=document.getElementById('submitWithdrawBtn');
+const cancelWithdrawBtn=document.getElementById('cancelWithdrawBtn');
+const watchLiveBtn=document.getElementById('watchLiveBtn');
+const liveFrame=document.getElementById('liveFrame');
+const liveVideoBox=document.getElementById('liveVideoBox');
+const musicBtn=document.getElementById('musicBtn');
+const player=document.getElementById('player');
+
+// ================== Hamburger =================
+menuToggleEl.addEventListener('click',()=>menuPanelEl.classList.toggle('show'));
+document.addEventListener('click',(e)=>{if(!menuPanelEl.contains(e.target)&&e.target!==menuToggleEl) menuPanelEl.classList.remove('show');});
+
+// ================== User Profile =================
+function setLocalProfile(uid,name,contact,email){
+  localStorage.setItem(LS_UID,uid);
+  localStorage.setItem(LS_NAME,name);
+  localStorage.setItem(LS_CONTACT,contact);
+  localStorage.setItem(LS_EMAIL,email);
+}
+viewProfileBtn.addEventListener('click',async()=>{
+  if(!firebase.auth().currentUser && !localStorage.getItem(LS_UID)){ alert('Login first'); return; }
+  let name=localStorage.getItem(LS_NAME)||myName||'Guest';
+  let uid=localStorage.getItem(LS_UID)||userId||'N/A';
+  let contact=localStorage.getItem(LS_CONTACT)||myContact||'N/A';
+  let email=localStorage.getItem(LS_EMAIL)||myEmail||'N/A';
+  const balSnap=await db.ref('users/'+uid).once('value');
+  const bal=(balSnap.val()&&balSnap.val().balance)||0;
+  alert(`Profile:\nName:${name}\nID:${uid}\nContact:${contact}\nEmail:${email}\nBalance:₹${bal}`);
+});
+
+// ================== Presence =================
+function attachPresence(){
+  if(myPresence){ myPresence.remove(); myPresence=null; }
+  const id=localStorage.getItem(LS_UID)||userId||('guest_'+Math.random().toString(36).slice(2,8));
+  myPresence=presenceRef.push({id,time:firebase.database.ServerValue.TIMESTAMP});
+  myPresence.onDisconnect().remove();
+}
+
+// ================== Guest =================
+function ensureGuest(){ attachPresence(); }
+
+// ================== Ticket Generator =================
+function generateTicketMatrix(){
+  let ticket=[];
+  for(let i=0;i<3;i++){
+    ticket[i]=[];
+    for(let j=0;j<9;j++){
+      ticket[i][j]=Math.floor(Math.random()*10*(j+1)%90)+1;
+    }
+  }
+  return ticket;
+}
+function renderTicket(grid,serial){
+  ticketEl.innerHTML='';
+  grid.forEach(row=>{
+    row.forEach(num=>{
+      const c=document.createElement('div'); c.className='ticket-cell'; c.textContent=num||'';
+      ticketEl.appendChild(c);
+    });
+  });
+  userTicketContainer.style.display='block';
+}
+
+// ================== Room System =================
+let roomListeners=[];
+function uiSetRoomStatus(text){ roomStatusPill.textContent=text; }
+function refreshPlayers(players){
+  const arr=Object.entries(players||{}).map(([uid,p])=>`${p.name||'Player'} ${p.paid?'✅':'❌'}`);
+  roomInfoEl.innerHTML=arr.length?('Players: '+arr.join(' | ')):'Players: (none)';
+}
+
+// === Room Create / Join / Buy / Start ===
+async function createRoom(){
+  if(!(localStorage.getItem(LS_UID) || firebase.auth().currentUser)) { alert('Login first'); return; }
+  isHost=true;
+  activeRoom='room_'+Math.random().toString(36).slice(2,8);
+  await db.ref('rooms/'+activeRoom).set({host:localStorage.getItem(LS_UID)||('host_'+Math.random().toString(36).slice(2,6)),hostName:localStorage.getItem(LS_NAME)||'Host',status:ROOM_STATUS.WAIT,createdAt:firebase.database.ServerValue.TIMESTAMP});
+  await db.ref(`rooms/${activeRoom}/players/${localStorage.getItem(LS_UID)||'guest'}`).set({name:localStorage.getItem(LS_NAME)||'Host',paid:false});
+  joinRoomIdInput.value=activeRoom;
+  roomBuyTicketBtn.style.display='none';
+  startRoomGameBtn.style.display='block'; startRoomGameBtn.disabled=true;
+  uiSetRoomStatus('Waiting');
+  attachRoomListeners(activeRoom);
+}
+async function joinRoomById(rid){
+  if(!rid) return alert('Enter Room ID');
+  if(!(localStorage.getItem(LS_UID) || firebase.auth().currentUser)) { alert('Login first'); return; }
+  const snap=await db.ref('rooms/'+rid).once('value');
+  if(!snap.exists()) return alert('Room not found');
+  const data=snap.val();
+  if(data.status!==ROOM_STATUS.WAIT) return alert('Room started/closed');
+  activeRoom=rid;
+  isHost=(data.host===localStorage.getItem(LS_UID)||'guest');
+  await db.ref(`rooms/${rid}/players/${localStorage.getItem(LS_UID)||'guest'}`).update({name:localStorage.getItem(LS_NAME)||'Player',paid:false});
+  roomBuyTicketBtn.style.display='inline-block';
+  startRoomGameBtn.style.display=isHost?'inline-block':'none';
+  uiSetRoomStatus('Waiting');
+  attachRoomListeners(rid);
+}
+function attachRoomListeners(rid){
+  roomListeners.forEach(ref=>ref.off()); roomListeners=[];
+  const roomRef=db.ref(`rooms/${rid}`);
+  const playersRef=db.ref(`rooms/${rid}/players`);
+  const statusRef=db.ref(`rooms/${rid}/status`);
+  const drawRef=db.ref(`rooms/${rid}/draw`);
+  playersRef.on('value',s=>{
+    const players=s.val()||{};
+    refreshPlayers(players);
+    const myUid=localStorage.getItem(LS_UID)||'guest';
+    const amInRoom=!!players[myUid];
+    if(amInRoom){ roomBuyTicketBtn.style.display='inline-block'; if(isHost) startRoomGameBtn.style.display='inline-block'; }
+    else { roomBuyTicketBtn.style.display='none'; startRoomGameBtn.style.display='none'; }
+    const uids=Object.keys(players);
+    const allPaid=uids.length>0&&uids.every(uid=>players[uid].paid===true);
+    if(allPaid){ uids.forEach(async(uid)=>{ if(!players[uid].ticket){ const t=generateTicketMatrix(); const serial=Math.floor(Math.random()*100000); await db.ref(`rooms/${rid}/players/${uid}`).update({ticket:t,serial}); } }); }
+    if(isHost) startRoomGameBtn.disabled=!allPaid;
+    if(players[myUid]&&players[myUid].ticket){ currentGrid=players[myUid].ticket; renderTicket(currentGrid,'#'+(players[myUid].serial||'ROOM')); }
+  }); roomListeners.push(playersRef);
+  statusRef.on('value',s=>{ const st=s.val(); if(st===ROOM_STATUS.WAIT) uiSetRoomStatus('Waiting'); else if(st===ROOM_STATUS.START) uiSetRoomStatus('Started'); else if(st===ROOM_STATUS.END) uiSetRoomStatus('Ended'); }); roomListeners.push(statusRef);
+  drawRef.on('value',s=>{ const d=s.val()||{}; const cur=d.current; const hist=d.history||[]; if(cur){ latestNumber.textContent='Number: '+cur; highlightBoard(cur,hist); } historyEl.textContent=hist.length?hist.join(', '):'None'; waitingTitle.textContent=(d&&d.startedAt)?'Room Draw Live':'Waiting for Draw...'; waitingDesc.textContent=(d&&d.startedAt)?`Room ${rid} playing`:'Room waiting'; }); roomListeners.push(drawRef);
+}
+async function roomBuyTicket(){ if(!activeRoom) return alert('Create/Join room first'); alert('Payment Successful!'); const grid=generateTicketMatrix(); const serial=Math.floor(Math.random()*100000); const uid=localStorage.getItem(LS_UID)||'guest'; await db.ref(`rooms/${activeRoom}/players/${uid}`).update({paid:true,ticket:grid,serial}); currentGrid=grid; renderTicket(currentGrid,'#'+serial); }
+async function startRoomGame(){ if(!isHost) return alert('Only host'); const plySnap=await db.ref(`rooms/${activeRoom}/players`).once('value'); const players=plySnap.val()||{}; const uids=Object.keys(players); const allPaid=uids.length>0&&uids.every(uid=>players[uid].paid===true); if(!allPaid) return alert('All players must buy ticket'); const nums=shuffle(Array.from({length:90},(_,i)=>i+1)); await db.ref(`rooms/${activeRoom}`).update({status:ROOM_STATUS.START}); await db.ref(`rooms/${activeRoom}/draw`).set({current:null,history:[],startedAt:Date.now(),intervalMs:DRAW_INTERVAL_MS,host:localStorage.getItem(LS_UID)||'host'}); let idx=0; clearInterval(drawTimer); drawTimer=setInterval(async()=>{ if(idx>=nums.length){ clearInterval(drawTimer); await db.ref(`rooms/${activeRoom}`).update({status:ROOM_STATUS.END}); speakTambolaSentence("Game Over, Try Next Time"); return; } const n=nums[idx++]; const ref=db.ref(`rooms/${activeRoom}/draw`); const snap=await ref.once('value'); const d=snap.val()||{history:[]}; const hist=d.history||[]; hist.push(n); await ref.update({current:n,history:hist}); applyAutoTickForNumber(n,hist); tryAutoClaims(); },DRAW_INTERVAL_MS);}
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]] } return arr; }
+function highlightBoard(n,hist){ const el=document.getElementById('b_'+n); if(el){ el.classList.add('highlight'); setTimeout(()=>el.classList.remove('highlight'),900); } historyEl.textContent=hist.join(', '); latestNumber.textContent='Number: '+n; speakTambolaNumber(n); }
+function applyAutoTickForNumber(n,hist){ if(!autoTickToggle.checked||!currentGrid) return; const cells=ticketEl.querySelectorAll('.ticket-cell'); cells.forEach(c=>{ const val=Number(c.textContent); if(!isNaN(val)&&val===n){ if(!c.classList.contains('ticked')) c.classList.add('ticked'); const ticksNow=JSON.parse(localStorage.getItem('ticks_'+(userId||'guest'))||'[]'); if(!ticksNow.includes(n)){ ticksNow.push(n); localStorage.setItem('ticks_'+(userId||'guest'),JSON.stringify(ticksNow)); } } }); }
+
+// ================== Event Listeners =================
+createRoomBtn.addEventListener('click',createRoom);
+joinRoomBtn.addEventListener('click',()=>joinRoomById(joinRoomIdInput.value.trim()));
+roomBuyTicketBtn.addEventListener('click',roomBuyTicket);
+startRoomGameBtn.addEventListener('click',startRoomGame);
+
+// ================== Cleanup =================
+window.addEventListener('beforeunload',()=>{ try{ if(myPresence) myPresence.remove(); if(activeRoom) db.ref(`rooms/${activeRoom}/players/${localStorage.getItem(LS_UID)||'guest'}`).remove(); }catch(e){} });
+
+// ================== AI Voice =================
+function speakTambolaNumber(number){ if(!window.speechSynthesis) return; const msg=new SpeechSynthesisUtterance(`Number ${number}`); window.speechSynthesis.cancel(); window.speechSynthesis.speak(msg); }
+function speakTamb
