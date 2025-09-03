@@ -41,12 +41,7 @@
 <body>
 <h1>🎛️ Tambola 69 - Admin Panel</h1>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="firebase-config.js"></script>
-<script src="userscript.js"></script> <!-- index.html -->
-<script src="admin.js"></script>       <!-- admin.html -->
+
 /* =======================
    Put your Firebase config here
    ======================= */
@@ -61,7 +56,16 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+  
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
+<!-- Firebase config -->
+<script src="firebase-config.js"></script>
+
+<!-- Your JS -->
+<script src="admin.js"></script>      <!-- admin.html -->
 /* Top-level refs */
 const currentGameRef = db.ref('currentGame');
 const nextGameRef = db.ref('nextGame');
