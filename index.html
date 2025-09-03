@@ -16,5 +16,28 @@
   <button onclick="alert('Ticket Purchase Coming Soon!')">Buy Ticket</button>
   <br><br>
   <a href="admin.html" style="color:lightblue">Go to Admin Panel</a>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "123456",
+    appId: "1:123456:web:abc123"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const numberRef = ref(db, "drawnNumber");
+  onValue(numberRef, (snapshot) => {
+    const data = snapshot.val();
+    document.getElementById("liveNumber").innerText = "Live Number: " + data.number;
+  });
+  </script>
 </body>
 </html>
