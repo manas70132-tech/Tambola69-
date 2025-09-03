@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambola 69 - Point Break Adventure</title>
+
+<style>
+/* =========================
+   Layout CSS (purana)
+   ========================= */
+body {
+    font-family: Arial, sans-serif;
+    background: #f8f9fa;
+    margin: 0;
+    padding: 0;
+}
+header {
+    background: #007bff;
+    color: white;
+    padding: 15px;
+    text-align: center;
+}
+.container {
+    padding: 20px;
+}
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    cursor: pointer;
+}
+.board {
+    display: grid;
+    grid-template-columns: repeat(5, 60px);
+    gap: 5px;
+    margin-top: 20px;
+}
+.cell {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 1px solid #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    cursor: pointer;
+}
+.cell.highlight {
+    background: #28a745;
+    color: white;
+    font-weight: bold;
+}
+.step {
+    display: none;
+}
+.step.active {
+    display: block;
+}
+.admin-panel, .user-panel {
+    margin-top: 30px;
+    padding: 15px;
+    background: #e9ecef;
+    border-radius: 8px;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Tambola 69 - Point Break Adventure</h1>
+</header>
+
+<div class="container">
+
+    <!-- Step 1: Login -->
+    <div class="step active" id="step1">
+        <h2>Step 1: Login</h2>
+        <input type="text" id="username" placeholder="Enter username">
+        <button id="loginBtn">Login</button>
+    </div>
+
+    <!-- Step 2: Select Board -->
+    <div class="step" id="step2">
+        <h2>Step 2: Select Your Board</h2>
+        <div class="board" id="userBoard"></div>
+        <button id="confirmBoardBtn">Confirm Board</button>
+    </div>
+
+    <!-- Step 3: Game Play -->
+    <div class="step" id="step3">
+        <h2>Step 3: Game</h2>
+        <!-- Admin Panel -->
+        <div class="admin-panel">
+            <h3>Admin Panel</h3>
+            <button id="drawNumberBtn">Draw Number</button>
+            <div>Last Number: <span id="lastNumber">None</span></div>
+        </div>
+        <!-- User Panel -->
+        <div class="user-panel">
+            <h3>User Panel</h3>
+            <div>Selected Numbers: <span id="selectedNumbers"></span></div>
+        </div>
+    </div>
+
+    <!-- Step 4: Results -->
+    <div class="step" id="step4">
+        <h2>Step 4: Results</h2>
+        <div>Numbers Drawn: <span id="drawnNumbersDisplay"></span></div>
+        <div>Your Selected Numbers: <span id="finalSelectedNumbers"></span></div>
+    </div>
+
+</div>
+
+<script>
+/* =========================
+   JS Functionality
+   ========================= */
+
+// --- Step Control ---
+function showStep(stepId){
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById(stepId).classList.add('active');
+}
+
+// Step 1: Login
+const loginBtn = document.getElementById('loginBtn');
+loginBtn.addEventListener('click', () => {
+    const username = document.getElementById('username').value.trim();
+    if(username === "") return alert("Enter username");
+    showStep('step2');
+});
+
+// Step 2: Select Board
+const userBoard = document.getElementById('userBoard');
+const confirmBoardBtn = document.getElementById('confirmBoardBtn');
+let userSelected = [];
+
+// Generate board 1-90
+for(let i=1; i<=90; i++){
+    const cell = document.createElement('div');
+    cell.classList.add('cell');
+    cell.textContent = i;
+    cell.dataset.num = i;
+    cell.addEventListener('click', () => {
+        if(userSelected.includes(i)) {
+            userSelected = userSelected.filter(n => n!==i);
+            cell.classList.remove('highlight');
+        } else {
+            userSelected.push(i);
+            cell.classList.add('highlight');
+        }
+    });
+    userBoard.appendChild(cell);
+}
+
+confirmBoardBtn.addEventListener('click', () => {
+    if(userSelected.length === 0) return alert("Select at least one number");
+    showStep('step3');
+    selectedNumbersElem.textContent = userSelected.join(', ');
+});
+
+// Step 3: Game Play (Admin + User)
+let numbers = Array.from({length: 90}, (_, i) => i + 1);
+let drawnNumbers = [];
+
+const lastNumberElem = document.getElementById('lastNumber');
+const drawNumberBtn = document.getElementById('drawNumberBtn');
+const selectedNumbersElem = document.getElementById('selectedNumbers');
+
+drawNumberBtn.addEventListener('click', () => {
+    if(numbers.length === 0) return alert("All numbers drawn!");
+    let randomIndex = Math.floor(Math.random() * numbers.length);
+    let num = numbers.splice(randomIndex, 1)[0];
+    drawnNumbers.push(num);
+    lastNumberElem.textContent = num;
+
+    // Highlight number in user board if selected
+    userSelected.forEach(n => {
+        const cell = document.querySelector(`#userBoard .cell[data-num='${n}']`);
+        if(drawnNumbers.includes(n)) cell.classList.add('highlight');
+    });
+
+    // Auto move to results if all numbers drawn
+    if(numbers.length === 0) {
+        showResults();
+    }
+});
+
+// Step 4: Results
+const drawnNumbersDisplay = document.getElementById('drawnNumbersDisplay');
+const finalSelectedNumbers = document.getElementById('finalSelectedNumbers');
+
+function showResults(){
+    showStep('step4');
+    drawnNumbersDisplay.textContent = drawnNumbers.join(', ');
+    finalSelectedNumbers.textContent = userSelected.join(', ');
+}
+</script>
+
+</body>
+</html>
