@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tambola 69 - Admin Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #222; color: #fff; text-align: center; }
+    h1 { color: yellow; }
+    input, button { padding: 10px; margin: 10px; border: none; border-radius: 5px; }
+    button { background: yellow; color: #111; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>⚡ Admin Panel ⚡</h1>
+  <p>Manage Tambola Game</p>
+
+  <input type="text" placeholder="Enter Number" id="drawNumber">
+  <button onclick="draw()">Draw Number</button>
+
+  <h2 id="result">No number drawn yet</h2>
+
+  <br><br>
+  <a href="index.html" style="color:lightblue">Go to User App</a>
+
+  <script>
+    function draw(){
+      let num = document.getElementById("drawNumber").value;
+      document.getElementById("result").innerText = "Number Drawn: " + num;
+    }
+  </script>
+</body>
+</html>
