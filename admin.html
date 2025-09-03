@@ -1,9 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Tambola 69 - Full Admin Panel</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tambola Admin Panel</title>
+</head>
+<body style="background:#111;color:#fff;text-align:center;padding:20px;">
+  <h1>Tambola Admin Panel</h1>
+  <button onclick="drawNumber()">🎲 Draw Number</button>
+  <h2 id="lastNumber">No number drawn yet</h2>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <script>
+    // 🔹 Yaha apna Firebase config paste karo
+    const firebaseConfig = {
+  apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+  authDomain: "tambola69-9dc8f.firebaseapp.com",
+  projectId: "tambola69-9dc8f",
+  storageBucket: "tambola69-9dc8f.firebasestorage.app",
+  messagingSenderId: "413290158586",
+  appId: "1:413290158586:web:70fff2d94b29206487ec43",
+  measurementId: "G-6WJNDX5DGB"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Number draw aur DB update
+    function drawNumber() {
+      const number = Math.floor(Math.random() * 90) + 1;
+      db.ref("game/currentNumber").set(number);
+      document.getElementById("lastNumber").innerText = "Last Draw: " + number;
+    }
+  </script>
+  
 <style>
   body { font-family: Arial, Helvetica, sans-serif; background: #111; color: #fff; text-align: center; padding: 18px; }
   h1,h2,h3 { color: orange; margin: 10px 0; }
