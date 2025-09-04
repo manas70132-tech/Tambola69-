@@ -366,6 +366,25 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+  firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const currentGameRef = db.ref("games/current");
+
+// ✅ USER FUNCTION: Listen for live updates from admin
+currentGameRef.on("value", snapshot => {
+  const data = snapshot.val();
+  if(data && data.number){
+    document.getElementById("currentNumber").innerText = data.number;
+  } else {
+    document.getElementById("currentNumber").innerText = "--";
+  }
+});
+
+// ✅ OPTIONAL: Log updates (debug)
+currentGameRef.on("value", snapshot => {
+  console.log("Live update:", snapshot.val());
+});
+</script>
 
 /* ================= Elements ================= */
 const boardEl = document.getElementById('board');
