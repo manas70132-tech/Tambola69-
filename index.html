@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Point Break Adventure - Tambola User App</title>
+<style>
+  /* ===================== Basic Styles ===================== */
+  body{font-family:sans-serif;margin:0;padding:0;background:#f0f0f0;color:#333;}
+  #boardEl{display:grid;grid-template-columns:repeat(9,40px);gap:2px;margin:10px;}
+  .board-cell{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #999;background:#fff;border-radius:4px;transition:0.3s;}
+  .board-cell.highlight{background:#ffeb3b;}
+  #ticketEl{display:grid;grid-template-columns:repeat(9,40px);gap:2px;margin:10px;}
+  .ticket-cell{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #555;background:#fff;border-radius:4px;cursor:pointer;transition:0.3s;}
+  .ticket-cell.ticked{background:#4caf50;color:#fff;}
+  .ticket-cell.buggy{background:#f44336 !important;color:#fff;}
+  .ticket-cell.empty{background:#eee;cursor:default;}
+  #menuPanel{position:absolute;top:40px;right:10px;background:#fff;border:1px solid #ccc;padding:10px;display:none;}
+  #menuPanel.show{display:block;}
+  #roomInfoEl, #playersListEl, #roomStatusPill{margin:5px 0;}
+  button{padding:5px 10px;margin:3px;cursor:pointer;}
+  #withdrawModal,#loginModal,#liveVideoBox{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);justify-content:center;align-items:center;}
+  .modal-content{background:#fff;padding:20px;border-radius:5px;width:90%;max-width:400px;}
+  #liveFrame{width:100%;height:200px;}
+</style>
+</head>
+<body>
+
+<h2>Point Break Adventure - Tambola User</h2>
+
+<div id="menuToggle">☰ Menu</div>
+<div id="menuPanel">
+  <button id="viewProfileBtn">View Profile</button>
+  <button id="withdrawBtn">Withdraw</button>
+</div>
+
+<div id="startGameBox">
+  <button id="buyTicketBtnTop">Buy Ticket</button>
+  <button id="buyTicketBtnBottom">Buy Ticket</button>
+</div>
+
+<div id="boardEl"></div>
+
+<div id="userTicketContainer">
+  <div id="ticketSerialEl">#000</div>
+  <div id="ticketEl"></div>
+</div>
+
+<div id="latestNumber">—</div>
+<div id="historyEl">None</div>
+<div id="waitingTitle">Waiting...</div>
+<div id="waitingDesc">—</div>
+<div id="waitingLiveText">Live Users: 0 <span id="liveDot" style="display:inline-block;width:10px;height:10px;background:#bdbdbd;border-radius:50%;"></span></div>
+
+<!-- Room system -->
+<div id="roomControls">
+  <input type="text" id="joinRoomIdInput" placeholder="Enter Room ID">
+  <button id="createRoomBtn">Create Room</button>
+  <button id="joinRoomBtn">Join Room</button>
+  <button id="roomBuyTicketBtn">Buy Ticket</button>
+  <button id="startRoomGameBtn">Start Game</button>
+</div>
+<div id="roomInfoEl"></div>
+<div id="playersListEl"></div>
+<div id="roomStatusPill"></div>
+
+<!-- Auto toggles -->
+<label><input type="checkbox" id="autoTickToggle"> Auto Tick</label>
+<label><input type="checkbox" id="autoClaimToggle"> Auto Claim</label>
+
+<!-- Withdraw Modal -->
+<div id="withdrawModal">
+  <div class="modal-content">
+    <h3>Withdraw</h3>
+    <input type="number" id="withdrawAmount" placeholder="Amount"><br>
+    <input type="text" id="withdrawDest" placeholder="UPI/Phone"><br>
+    <button id="submitWithdrawBtn">Submit</button>
+    <button id="cancelWithdrawBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- Login/OTP Modal -->
+<div id="loginModal">
+  <div class="modal-content">
+    <h3>Login</h3>
+    <div id="detailsStep">
+      <input type="text" id="nameInput" placeholder="Name"><br>
+      <input type="email" id="emailInput" placeholder="Email"><br>
+      <input type="text" id="phoneInput" placeholder="Phone"><br>
+      <button id="saveDetailsBtn">Save Details</button>
+    </div>
+    <div id="recaptcha-container"></div>
+    <input type="text" id="otpInput" placeholder="Enter OTP"><br>
+    <button id="sendOtpBtn">Send OTP</button>
+    <button id="verifyOtpBtn">Verify OTP</button>
+    <button id="closeLoginBtn">Close</button>
+  </div>
+</div>
+
+<!-- Live Video -->
+<button id="watchLiveBtn">Watch Live</button>
+<div id="liveVideoBox">
+  <iframe id="liveFrame" frameborder="0" allowfullscreen></iframe>
+</div>
+
+<!-- Audio Player -->
+<audio id="player" controls></audio>
+<button id="musicBtn">Toggle Music</button>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+/* ================== Firebase Config ================== */
+"AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+  authDomain: "tambola69-9dc8f.firebaseapp.com",
+  projectId: "tambola69-9dc8f",
+  storageBucket: "tambola69-9dc8f.firebasestorage.app",
+  messagingSenderId: "413290158586",
+  appId: "1:413290158586:web:70fff2d94b29206487ec43",
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ================== LocalStorage Keys ================== */
+const LS_UID='uid', LS_NAME='name', LS_CONTACT='contact', LS_EMAIL='email', LS_AUTOTICK='autoTick', LS_AUTOCLAIM='autoClaim';
+
+/* ================== DOM Elements ================== */
+const boardEl = document.getElementById('boardEl');
+const ticketEl = document.getElementById('ticketEl');
+const ticketSerialEl = document.getElementById('ticketSerialEl');
+const userTicketContainer = document.getElementById('userTicketContainer');
+const latestNumber = document.getElementById('latestNumber');
+const historyEl = document.getElementById('historyEl');
+const waitingTitle = document.getElementById('waitingTitle');
+const waitingDesc = document.getElementById('waitingDesc');
+const waitingLiveText = document.getElementById('waitingLiveText');
+const liveDot = document.getElementById('liveDot');
+
+const createRoomBtn=document.getElementById('createRoomBtn');
+const joinRoomBtn=document.getElementById('joinRoomBtn');
+const joinRoomIdInput=document.getElementById('joinRoomIdInput');
+const roomBuyTicketBtn=document.getElementById('roomBuyTicketBtn');
+const startRoomGameBtn=document.getElementById('startRoomGameBtn');
+const roomInfoEl=document.getElementById('roomInfoEl');
+const playersListEl=document.getElementById('playersListEl');
+const roomStatusPill=document.getElementById('roomStatusPill');
+
+const autoTickToggle=document.getElementById('autoTickToggle');
+const autoClaimToggle=document.getElementById('autoClaimToggle');
+
+const viewProfileBtn=document.getElementById('viewProfileBtn');
+const withdrawBtn=document.getElementById('withdrawBtn');
+const withdrawModal=document.getElementById('withdrawModal');
+const cancelWithdrawBtn=document.getElementById('cancelWithdrawBtn');
+const submitWithdrawBtn=document.getElementById('submitWithdrawBtn');
+const withdrawAmount=document.getElementById('withdrawAmount');
+const withdrawDest=document.getElementById('withdrawDest');
+
+const loginModal=document.getElementById('loginModal');
+const sendOtpBtn=document.getElementById('sendOtpBtn');
+const verifyOtpBtn=document.getElementById('verifyOtpBtn');
+const closeLoginBtn=document.getElementById('closeLoginBtn');
+const detailsStep=document.getElementById('detailsStep');
+const nameInput=document.getElementById('nameInput');
+const emailInput=document.getElementById('emailInput');
+const phoneInput=document.getElementById('phoneInput');
+const otpInput=document.getElementById('otpInput');
+
+const watchLiveBtn=document.getElementById('watchLiveBtn');
+const liveFrame=document.getElementById('liveFrame');
+const liveVideoBox=document.getElementById('liveVideoBox');
+const player=document.getElementById('player');
+const musicBtn=document.getElementById('musicBtn');
+
+/* ================== User Profile ================== */
+let userId=null, myName='Guest', myContact=null, myEmail=null;
+function setLocalProfile(uid,name,contact,email){
+  localStorage.setItem(LS_UID,uid);
+  localStorage.setItem(LS_NAME,name);
+  localStorage.setItem(LS_CONTACT,contact||'');
+  localStorage.setItem(LS_EMAIL,email||'');
+}
+function loadProfileFromLocal(){
+  userId=localStorage.getItem(LS_UID);
+  myName=localStorage.getItem(LS_NAME);
+  myContact=localStorage.getItem(LS_CONTACT);
+  myEmail=localStorage.getItem(LS_EMAIL);
+}
+function ensureGuest(){
+  if(!localStorage.getItem(LS_UID)){
+    const gen='u_'+Math.random().toString(36).slice(2,9);
+    setLocalProfile(gen,'Guest',null,null);
+  }
+  loadProfileFromLocal();
+}
+autoTickToggle.checked = localStorage.getItem(LS_AUTOTICK)==='1';
+autoClaimToggle.checked = localStorage.getItem(LS_AUTOCLAIM)==='1';
+autoTickToggle.addEventListener('change',()=>localStorage.setItem(LS_AUTOTICK, autoTickToggle.checked?'1':'0'));
+autoClaimToggle.addEventListener('change',()=>localStorage.setItem(LS_AUTOCLAIM, autoClaimToggle.checked?'1':'0'));
+
+/* ================== Board ================== */
+for(let i=1;i<=90;i++){
+  const cell=document.createElement('div');
+  cell.className='board-cell';
+  cell.id='b_'+i;
+  cell.textContent=i;
+  boardEl.appendChild(cell);
+}
+
+/* ================== Ticket Generator ================== */
+function generateTicketMatrix(){
+  const cols=[], chosen=[];
+  for(let c=0;c<9;c++){
+    const min=c===0?1:c*10;
+    const max=c===8?90:c*10+9;
+    const pool=[]; for(let n=min;n<=max;n++) pool.push(n);
+    cols.push(pool);
+  }
+  while(chosen.length<15){
+    const c=Math.floor(Math.random()*9);
+    if(chosen.filter(x=>x.col===c).length>=3) continue;
+    const pool=cols[c];
+    const val=pool[Math.floor(Math.random()*pool.length)];
+    if(!chosen.some(x=>x.num===val)) chosen.push({col:c,num:val});
+  }
+  const byCol=Array.from({length:9},()=>[]);
+  chosen.forEach(x=>byCol[x.col].push(x.num));
+  byCol.forEach(a=>a.sort((a,b)=>a-b));
+  const grid=Array.from({length:3},()=>Array(9).fill(null));
+  const rowCounts=[0,0,0];
+  for(let c=0;c<9;c++){
+    if(byCol[c].length===3){ for(let r=0;r<3;r++){ grid[r][c]=byCol[c][r]; rowCounts[r]++; } }
+  }
+  for(let c=0;c<9;c++){
+    if(byCol[c].length===2){
+      const rows=[0,1,2].sort((a,b)=>rowCounts[a]-rowCounts[b]).slice(0,2);
+      grid[rows[0]][c]=byCol[c][0]; grid[rows[1]][c]=byCol[c][1];
+      rowCounts[rows[0]]++; rowCounts[rows[1]]++;
+    }
+  }
+  for(let c=0;c<9;c++){
+    if(byCol[c].length===1){
+      const r=[0,1,2].sort((a,b)=>rowCounts[a]-rowCounts[b])[0];
+      grid[r][c]=byCol[c][0]; rowCounts[r]++;
+    }
+  }
+  return grid;
+}
+
+/* ================== Render Ticket ================== */
+let currentGrid=null;
+function renderTicket(grid, serialText){
+  const g = grid || currentGrid;
+  if(!g) return;
+  userTicketContainer.style.display='block';
+  ticketEl.innerHTML='';
+  if(serialText) ticketSerialEl.textContent=serialText;
+  const ticks=JSON.parse(localStorage.getItem('ticks_'+(userId||'guest'))||'[]');
+  for(let r=0;r<3;r++){
+    for(let c=0;c<9;c++){
+      const val=g[r][c];
+      const cell=document.createElement('div');
+      if(!val){cell.className='ticket-cell empty'; cell.innerHTML='&nbsp;';}
+      else{
+        cell.className='ticket-cell';
+        cell.textContent=val;
+        if(ticks.includes(val)) cell.classList.add('ticked');
+      }
+      cell.addEventListener('click',()=>{
+        if(!val) return;
+        const ticksNow=JSON.parse(localStorage.getItem('ticks_'+(userId||'guest'))||'[]');
+        if(cell.classList.contains('ticked')){
+          cell.classList.remove('ticked');
+          const idx=ticksNow.indexOf(val); if(idx>-1) ticksNow.splice(idx,1);
+        } else {
+          cell.classList.add('ticked'); ticksNow.push(val);
+        }
+        localStorage.setItem('ticks_'+(userId||'guest'),JSON.stringify(ticksNow));
+      });
+      ticketEl.appendChild(cell);
+    }
+  }
+}
+
+/* ================== Helper Functions ================== */
+function ticketNumbersFlat(grid){ return grid.flat().filter(Boolean); }
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]] } return arr; }
+
+/* ================== Firebase Presence ================== */
+const presenceRef=db.ref('presence');
+let myPresence=null;
+function attachPresence(){
+  try{ if(myPresence){ myPresence.remove(); myPresence=null; } }catch(e){}
+  const id=localStorage.getItem(LS_UID)||userId||('guest_'+Math.random().toString(36).slice(2,8));
+  myPresence=presenceRef.push({id,time:firebase.database.ServerValue.TIMESTAMP});
+  myPresence.onDisconnect().remove();
+}
+presenceRef.on('value',snap=>{
+  const n=snap.numChildren()||0;
+  waitingLiveText.textContent='Live Users
+: 'Live Users: '+n+' '; 
+  liveDot.style.background=n>0?'#4caf50':'#bdbdbd';
+});
+
+/* ================== Withdraw ================== */
+withdrawBtn.addEventListener('click',()=>{ withdrawModal.style.display='flex'; });
+cancelWithdrawBtn.addEventListener('click',()=>{ withdrawModal.style.display='none'; });
+submitWithdrawBtn.addEventListener('click', async ()=>{
+  const amt=Number(withdrawAmount.value);
+  const dest=withdrawDest.value.trim();
+  if(!amt || !dest) return alert('Enter amount & destination');
+  // mock balance (replace with DB fetch)
+  const bal=Number(localStorage.getItem('myWinnings')||1000);
+  if(amt>bal) return alert('Insufficient balance');
+  const newBal=bal-amt;
+  localStorage.setItem('myWinnings',newBal);
+  const wref=db.ref('withdrawals').push();
+  await wref.set({userId:userId,name:myName,amount:amt,dest,time:firebase.database.ServerValue.TIMESTAMP,status:'pending'});
+  withdrawModal.style.display='none';
+  alert('Withdrawal request recorded. Admin will be notified.');
+});
+
+/* ================== Room System ================== */
+let roomListeners=[],activeRoom=null,isHost=false;
+function uiSetRoomStatus(txt){ roomStatusPill.textContent=txt; }
+function refreshPlayers(players){
+  const arr=Object.entries(players||{}).map(([uid,p])=> `${p.name||'Player'} ${p.paid?'✅':'❌'}`);
+  playersListEl.innerHTML=arr.length?('Players: '+arr.join(' | ')):'Players: (none)';
+}
+async function createRoom(){
+  isHost=true;
+  activeRoom='room_'+Math.random().toString(36).slice(2,8);
+  await db.ref('rooms/'+activeRoom).set({
+    host:userId,hostName:myName,status:'WAIT',createdAt:firebase.database.ServerValue.TIMESTAMP
+  });
+  await db.ref(`rooms/${activeRoom}/players/${userId}`).set({name:myName,paid:false});
+  roomInfoEl.textContent='Room Created: '+activeRoom;
+  joinRoomIdInput.value=activeRoom;
+  roomBuyTicketBtn.style.display='none';
+  startRoomGameBtn.style.display='block';
+  startRoomGameBtn.disabled=true;
+  uiSetRoomStatus('Waiting');
+  attachRoomListeners(activeRoom);
+}
+async function joinRoomById(rid){
+  if(!rid) return alert('Enter Room ID');
+  const snap=await db.ref('rooms/'+rid).once('value');
+  if(!snap.exists()) return alert('Room not found');
+  const data=snap.val();
+  if(data.status!=='WAIT') return alert('Room already started/closed');
+  activeRoom=rid;
+  isHost=(data.host===userId);
+  await db.ref(`rooms/${rid}/players/${userId}`).update({name:myName,paid:false});
+  roomInfoEl.textContent=`Joined Room: ${rid} | Host: ${data.hostName||data.host}`;
+  roomBuyTicketBtn.style.display='inline-block';
+  startRoomGameBtn.style.display=isHost?'inline-block':'none';
+  startRoomGameBtn.disabled=true;
+  uiSetRoomStatus('Waiting');
+  attachRoomListeners(rid);
+}
+function attachRoomListeners(rid){
+  roomListeners.forEach(ref=>ref.off()); roomListeners=[];
+  const roomRef=db.ref(`rooms/${rid}`);
+  const playersRef=db.ref(`rooms/${rid}/players`);
+  const statusRef=db.ref(`rooms/${rid}/status`);
+  const drawRef=db.ref(`rooms/${rid}/draw`);
+  
+  playersRef.on('value', async s=>{
+    const players=s.val()||{};
+    refreshPlayers(players);
+    const myUid=userId;
+    const amInRoom=!!players[myUid];
+    roomBuyTicketBtn.style.display=amInRoom?'inline-block':'none';
+    startRoomGameBtn.style.display=(amInRoom && isHost)?'inline-block':'none';
+    const uids=Object.keys(players);
+    const allPaid=uids.length>0 && uids.every(uid=>players[uid].paid===true);
+    if(allPaid){
+      uids.forEach(async uid=>{
+        const p=players[uid]||{};
+        if(!p.ticket){
+          const t=generateTicketMatrix();
+          const serial=Math.floor(Math.random()*100000);
+          await db.ref(`rooms/${rid}/players/${uid}`).update({ticket:t,serial});
+        }
+      });
+    }
+    if(isHost) startRoomGameBtn.disabled=!allPaid;
+    if(players[myUid] && players[myUid].ticket){
+      currentGrid=players[myUid].ticket;
+      renderTicket(currentGrid,'#'+(players[myUid].serial||'ROOM'));
+    }
+  }); roomListeners.push(playersRef);
+
+  statusRef.on('value',s=>{
+    const st=s.val();
+    if(st==='WAIT') uiSetRoomStatus('Waiting');
+    else if(st==='START') uiSetRoomStatus('Started');
+    else if(st==='END') uiSetRoomStatus('Ended');
+  }); roomListeners.push(statusRef);
+
+  drawRef.on('value', s=>{
+    const d=s.val()||{};
+    const cur=d.current; const hist=d.history||[];
+    if(cur){ latestNumber.textContent='Number: '+cur; highlightBoard(cur,hist); }
+    historyEl.textContent=hist.length?hist.join(', '):'None';
+    waitingTitle.textContent=d.startedAt?'Room Draw Live':'Waiting for Draw...';
+    waitingDesc.textContent=d.startedAt?`Room ${rid} playing`:'Room waiting';
+  }); roomListeners.push(drawRef);
+}
+
+/* ================== Buy Ticket ================== */
+async function roomBuyTicket(){
+  if(!activeRoom) return alert('Create or Join a room first');
+  alert('Payment Successful!');
+  const grid=generateTicketMatrix();
+  const serial=Math.floor(Math.random()*100000);
+  await db.ref(`rooms/${activeRoom}/players/${userId}`).update({paid:true,ticket:grid,serial});
+  currentGrid=grid; renderTicket(currentGrid,'#'+serial);
+}
+
+/* ================== Start Room Game ================== */
+let drawTimer=null, DRAW_INTERVAL_MS=2000;
+async function startRoomGame(){
+  if(!isHost) return alert('Only host can start.');
+  const plySnap=await db.ref(`rooms/${activeRoom}/players`).once('value');
+  const players=plySnap.val()||{};
+  const uids=Object.keys(players);
+  const allPaid=uids.length>0 && uids.every(uid=>players[uid].paid===true);
+  if(!allPaid) return alert('All players must buy ticket first.');
+  const nums=shuffle(Array.from({length:90},(_,i)=>i+1));
+  await db.ref(`rooms/${activeRoom}`).update({status:'START'});
+  await db.ref(`rooms/${activeRoom}/draw`).set({current:null,history:[],startedAt:Date.now(),intervalMs:DRAW_INTERVAL_MS,host:userId});
+  let idx=0;
+  clearInterval(drawTimer);
+  drawTimer=setInterval(async ()=>{
+    if(idx>=nums.length){
+      clearInterval(drawTimer);
+      await db.ref(`rooms/${activeRoom}`).update({status:'END'});
+      speakTambolaSentence("Game Over, Try Next Time");
+      return;
+    }
+    const n=nums[idx++];
+    const ref=db.ref(`rooms/${activeRoom}/draw`);
+    const snap=await ref.once('value');
+    const d=snap.val()||{history:[]};
+    const hist=d.history||[];
+    hist.push(n);
+    await ref.update({current:n,history:hist});
+    applyAutoTickForNumber(n,hist);
+    tryAutoClaims();
+  },DRAW_INTERVAL_MS);
+}
+
+/* ================== Highlight & Auto Tick ================== */
+function highlightBoard(n,hist){
+  const el=document.getElementById('b_'+n);
+  if(el){ el.classList.add('highlight'); setTimeout(()=>el.classList.remove('highlight'),900); }
+  historyEl.textContent=hist.join(', ');
+  latestNumber.textContent='Number: '+n;
+  speakTambolaNumber(n);
+}
+function applyAutoTickForNumber(n,hist){
+  if(!autoTickToggle.checked || !currentGrid) return;
+  const cells=ticketEl.querySelectorAll('.ticket-cell');
+  cells.forEach(c=>{
+    const val=Number(c.textContent);
+    if(!isNaN(val)&&val===n){
+      if(!c.classList.contains('ticked')) c.classList.add('ticked');
+      const ticksNow=JSON.parse(localStorage.getItem('ticks_'+(userId||'guest'))||'[]');
+      if(!ticksNow.includes(n)){ ticksNow.push(n); localStorage.setItem('ticks_'+(userId||'guest'),JSON.stringify(ticksNow)); }
+    }
+  });
+}
+
+/* ================== AI Voice ================== */
+(function(){
+  let VOICE_ENABLED=true,_primed=false;
+  function primeVoice(){ if(_primed) return; try{ window.speechSynthesis.speak(new SpeechSynthesisUtterance('')); _primed=true;}catch(e){}}
+  window.addEventListener('click',primeVoice,{once:true,passive:true});
+  window.addEventListener('touchstart',primeVoice,{once:true,passive:true});
+  const tambolaDialog={1:"one",3:"three",4:"four",5:"five",7:"seven",10:"badmash",19:"nineteen",21:"twenty one",24:"twenty four",25:"silver jubilee",26:"republic day",28:"pull the gate",29:"rise and shine",36:"flirty wife",41:"Alli Baba",46:"choke chhke",47:"forty seven",48:"forty eight",50:"Golden Jubilee",53:"fifty three",65:"लाखों में एक है मेरी wife",66:"all the sixes",69:"sixty nine",74:"open the door",75:"shuru karo deive",79:"old wine",82:"down with flu",85:"I still live",90:"last number"};
+  window.speakTambolaNumber=function(number){ if(!VOICE_ENABLED||!window.speechSynthesis)return; const msg=new SpeechSynthesisUtterance(); msg.text=tambolaDialog[number]||`Number ${number}`; msg.lang='en-IN'; msg.rate=1+Math.random()*0.2; msg.pitch=1+Math.random()*0.3; window.speechSynthesis.cancel(); window.speechSynthesis.speak(msg);}
+  window.speakTambolaSentence=function(sentence){ if(!VOICE_ENABLED||!window.speechSynthesis)return; const msg=new SpeechSynthesisUtterance(sentence); msg.lang='en-IN'; window.speechSynthesis.cancel(); window.speechSynthesis.speak(msg);}
+})();
+
+/* ================== Watch Live ================== */
+watchLiveBtn.addEventListener('click',()=>{
+  const VIDEO_ID="YOUR_YOUTUBE_LIVE_VIDEO_ID";
+  if(!VIDEO_ID||VIDEO_ID==="YOUR_YOUTUBE_LIVE_VIDEO_ID"){ alert("Set your YouTube Live Video ID."); return;}
+  liveFrame.src="https://www.youtube.com/embed/"+VIDEO_ID+"?autoplay=1&rel=0";
+  liveVideoBox.style.display='block'; watchLiveBtn.style.display='none';
+});
+
+/* ================== Music ================== */
+let isUserMuted=false;
+const musicRef=db.ref('music');
+musicRef.on('value',snap=>{
+  const data=snap.val()||{};
+  if(!data.url) return;
+  if(player.src!==data.url) player.src=data.url;
+  if(data.isPlaying && !isUserMuted) player.play().catch(()=>{});
+  else player.pause();
+});
+musicBtn.addEventListener('click',()=>{
+  if(player.paused){ isUserMuted=false; player.play().catch(()=>{}); musicBtn.style.opacity='1'; }
+  else{ isUserMuted=true; player.pause(); musicBtn.style.opacity='0.5'; }
+});
+
+/* ================== Button Wiring ================== */
+createRoomBtn.addEventListener('click',createRoom);
+joinRoomBtn.addEventListener('click',()=>joinRoomById(joinRoomIdInput.value.trim()));
+roomBuyTicketBtn.addEventListener('click',roomBuyTicket);
+startRoomGameBtn.addEventListener('click',startRoomGame);
+
+/* ================== Initial Setup ================== */
+ensureGuest();
+attachPresence();
+uiSetRoomStatus('No Room');
+userTicketContainer.style.display='none';
+latestNumber.textContent='—';
+historyEl.textContent='None';
+
+/* ================== Cleanup ================== */
+window.addEventListener('beforeunload',()=>{
+  try{ if(myPresence) myPresence.remove(); if(activeRoom) db.ref(`rooms/${activeRoom}/players/${userId}`).remove(); }catch(e){}
+});
+</script>
+
+</body>
+</html>
