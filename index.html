@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tambola 69 — User App</title>
+  <style>
+    /* ---------- Basic layout & styling ---------- */
+    :root{
+      --bg:#0f1724; --card:#0b1220; --accent:#22c1c3; --muted:#9aa6b2; --white:#e6eef5;
+      font-family: Inter, system-ui, Arial, sans-serif;
+    }
+    body{margin:0;background:linear-gradient(180deg,#071123, #071b2a); color:var(--white); min-height:100vh;}
+    .container{max-width:1100px;margin:28px auto;padding:18px;}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    header h1{font-size:20px;margin:0}
+    .top-row{display:flex;gap:12px;flex-wrap:wrap}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .small{padding:10px;border-radius:10px}
+    .board{display:grid;grid-template-columns:repeat(10,1fr);gap:8px;margin-top:12px}
+    .cell{background:rgba(255,255,255,0.03);padding:10px;border-radius:8px;text-align:center;font-weight:700}
+    .cell.drawn{background:linear-gradient(90deg,var(--accent),#6ce3e6);color:#012; transform:scale(1.05); box-shadow:0 8px 20px rgba(34,193,195,0.12)}
+    .controls{display:flex;gap:10px;align-items:center}
+    .btn{background:var(--accent);color:#012;padding:10px 12px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
+    .outline{background:transparent;border:1px solid rgba(255,255,255,0.06); padding:8px 10px;border-radius:8px}
+    .ticket{background:rgba(255,255,255,0.02);border-radius:8px;padding:8px;margin:6px 0}
+    .tickets-list{max-height:260px;overflow:auto;padding-right:6px}
+    .status{font-size:13px;color:var(--muted)}
+    .row{display:flex;gap:12px;align-items:center}
+    footer{margin-top:20px;color:var(--muted);font-size:13px}
+    .badge{display:inline-block;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.03)}
+    .countdown{font-weight:800;font-size:18px}
+    /* responsive */
+    @media (max-width:700px){ .board{grid-template-columns:repeat(6,1fr)} header{flex-direction:column;align-items:flex-start;gap:8px} .top-row{flex-direction:column} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Tambola 69 — User App</h1>
+      <div class="status" id="connectionStatus">Connecting...</div>
+    </header>
+
+    <div class="top-row">
+      <!-- Left: Live board -->
+      <div class="card" style="flex:1;min-width:320px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="badge">Live Draw</div>
+            <div style="margin-top:6px" id="lastDrawn">Last drawn: —</div>
+          </div>
+          <div style="text-align:right">
+            <div class="countdown" id="countdown">--:--</div>
+            <div class="status">Next draw in</div>
+          </div>
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn" id="btnShowAll">Show All Drawn</button>
+          <button class="outline" id="btnRefresh">Refresh</button>
+          <div style="flex:1"></div>
+          <div class="status">Tickets left: <span id="leftTickets">—</span></div>
+        </div>
+      </div>
+
+      <!-- Right: Tickets & Live winners -->
+      <div style="width:360px;min-width:260px;display:flex;flex-direction:column;gap:12px">
+        <div class="card small">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>Your Tickets</strong><div class="status">Generate / Buy (simulated)</div></div>
+            <div><button class="btn" id="btnGenerate">Generate Ticket</button></div>
+          </div>
+          <div class="tickets-list" id="ticketsList" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card small">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>Live Winners</strong><div class="status">Top winners from admin</div></div>
+            <div><button class="outline" id="btnClaimRefresh">Refresh</button></div>
+          </div>
+          <div id="winnersBox" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card small">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>Prize Percentages</strong><div class="status">From Admin</div></div>
+            <div><button class="outline" id="btnPrizesRefresh">Refresh</button></div>
+          </div>
+          <div id="prizeBox" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div>Instructions: Replace Firebase config below. Listen paths: <code>/drawnNumbers</code>, <code>/leftTickets</code>, <code>/winners</code>, <code>/prizes</code>, <code>/countdown</code>. These can be adjusted in JS.</div>
+    </footer>
+  </div>
+
+  <!-- Firebase v9 modular CDN -->
+  <script type="module">
+    // ------------------ CONFIGURE HERE ------------------
+    const firebaseConfig = {
+      apiKey: "FIREBASE_API_KEY_HERE",
+      authDomain: "FIREBASE_PROJECT.firebaseapp.com",
+      databaseURL: "https://FIREBASE_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "FIREBASE_PROJECT",
+      storageBucket: "FIREBASE_PROJECT.appspot.com",
+      messagingSenderId: "XXXX",
+      appId: "1:XXXX:web:XXXX"
+    };
+    // Root path in Realtime DB where admin writes data.
+    // Example structure expected:
+    // /tambola/ drawnNumbers: { "1": true, "12": true, ... }
+    //           leftTickets: 120
+    //           winners: { "1": {name:"A", prize:"Full House"}, ...}
+    //           prizes: { topLine: "5%", fullHouse: "50%", ...}
+    //           countdown: { until: 169XXXX } // optional timestamp or seconds
+    const DATABASE_ROOT_PATH = '/tambola';
+    // ---------------------------------------------------
+
+    // import firebase modular
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, push, child, get, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    // init
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // UI references
+    const boardEl = document.getElementById('board');
+    const lastDrawnEl = document.getElementById('lastDrawn');
+    const leftTicketsEl = document.getElementById('leftTickets');
+    const ticketsListEl = document.getElementById('ticketsList');
+    const winnersBox = document.getElementById('winnersBox');
+    const prizeBox = document.getElementById('prizeBox');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const countdownEl = document.getElementById('countdown');
+
+    // local user tickets store (simple)
+    let userTickets = [];
+    let drawnSet = new Set();
+
+    // create board 1..90
+    function createBoard(){
+      boardEl.innerHTML='';
+      for(let i=1;i<=90;i++){
+        const c = document.createElement('div');
+        c.className='cell';
+        c.id = 'n_'+i;
+        c.textContent = i;
+        boardEl.appendChild(c);
+      }
+    }
+    createBoard();
+
+    // realtime listeners
+    const rootRef = ref(db, DATABASE_ROOT_PATH);
+
+    // drawnNumbers listener
+    onValue(child(rootRef, 'drawnNumbers'), snapshot => {
+      drawnSet = new Set();
+      if(snapshot.exists()){
+        snapshot.forEach(s=>{
+          const num = parseInt(s.key);
+          drawnSet.add(num);
+        });
+      }
+      renderDrawn();
+    }, err => {
+      console.error('drawnNumbers listener err', err);
+    });
+
+    // leftTickets
+    onValue(child(rootRef, 'leftTickets'), snapshot => {
+      if(snapshot.exists()){
+        leftTicketsEl.textContent = snapshot.val();
+      } else leftTicketsEl.textContent = '—';
+    });
+
+    // winners
+    onValue(child(rootRef,'winners'), snapshot=>{
+      winnersBox.innerHTML='';
+      if(snapshot.exists()){
+        snapshot.forEach(s=>{
+          const w = s.val();
+          const row = document.createElement('div');
+          row.style.padding='6px 0';
+          row.innerHTML = `<strong>${w.name||'—'}</strong> • ${w.prize||'—'} ${w.amount?('• ₹'+w.amount):''}`;
+          winnersBox.appendChild(row);
+        });
+      } else {
+        winnersBox.innerHTML = '<div class="status">No winners yet</div>';
+      }
+    });
+
+    // prizes
+    onValue(child(rootRef,'prizes'), snapshot=>{
+      prizeBox.innerHTML='';
+      if(snapshot.exists()){
+        snapshot.forEach(s=>{
+          const k = s.key, v = s.val();
+          const div = document.createElement('div');
+          div.style.padding='4px 0';
+          div.innerHTML = `<strong>${k}</strong>: <span class="status">${v}</span>`;
+          prizeBox.appendChild(div);
+        });
+      } else prizeBox.innerHTML = '<div class="status">No prize data</div>';
+    });
+
+    // countdown (optional) - admin can write a secondsRemaining or a unix timestamp
+    onValue(child(rootRef,'countdown'), snapshot=>{
+      if(!snapshot.exists()){ countdownEl.textContent='--:--'; return; }
+      const data = snapshot.val();
+      // if admin wrote {until: 169xxx} treat as unix ms, or secondsRemaining
+      if(data.until){
+        startCountdown(new Date(data.until).getTime());
+      } else if(data.secondsRemaining){
+        startCountdown(Date.now() + (data.secondsRemaining*1000));
+      } else {
+        countdownEl.textContent='--:--';
+      }
+    });
+
+    // connection monitor
+    onValue(ref(db, '.info/connected'), snap => {
+      if(snap.exists() && snap.val() === true) {
+        connectionStatus.textContent = 'Connected (Realtime)';
+      } else {
+        connectionStatus.textContent = 'Offline';
+      }
+    });
+
+    // ---------- Helpers ----------
+    function renderDrawn(){
+      // reset all cells
+      for(let i=1;i<=90;i++){
+        const el = document.getElementById('n_'+i);
+        el.classList.toggle('drawn', drawnSet.has(i));
+      }
+      // update last drawn display
+      if(drawnSet.size){
+        const arr = Array.from(drawnSet).sort((a,b)=>a-b);
+        lastDrawnEl.textContent = 'Last drawn: ' + arr[arr.length-1];
+      } else {
+        lastDrawnEl.textContent = 'Last drawn: —';
+      }
+    }
+
+    // show modal of all drawn (simple alert)
+    document.getElementById('btnShowAll').addEventListener('click', ()=> {
+      const list = Array.from(drawnSet).sort((a,b)=>a-b);
+      alert(list.length ? 'Drawn: ' + list.join(', ') : 'No numbers drawn yet');
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', ()=> {
+      // manual refresh: read once
+      get(child(rootRef,'drawnNumbers')).then(snap=>{
+        drawnSet.clear();
+        if(snap.exists()){
+          snap.forEach(s=> drawnSet.add(parseInt(s.key)) );
+        }
+        renderDrawn();
+      });
+    });
+
+    document.getElementById('btnPrizesRefresh').addEventListener('click', ()=> {
+      get(child(rootRef,'prizes')).then(snap=>{
+        // onValue already handles updates, so this is just manual fetch fallback
+        if(snap.exists()){
+          prizeBox.innerHTML='';
+          snap.forEach(s=>{
+            const div = document.createElement('div');
+            div.style.padding='4px 0';
+            div.innerHTML = `<strong>${s.key}</strong>: <span class="status">${s.val()}</span>`;
+            prizeBox.appendChild(div);
+          });
+        }
+      });
+    });
+
+    document.getElementById('btnClaimRefresh').addEventListener('click', ()=> {
+      get(child(rootRef,'winners')).then(snap=>{
+        winnersBox.innerHTML='';
+        if(snap.exists()){
+          snap.forEach(s=>{
+            const w = s.val();
+            const row = document.createElement('div');
+            row.style.padding='6px 0';
+            row.innerHTML = `<strong>${w.name||'—'}</strong> • ${w.prize||'—'} ${w.amount?('• ₹'+w.amount):''}`;
+            winnersBox.appendChild(row);
+          });
+        } else winnersBox.innerHTML = '<div class="status">No winners yet</div>';
+      });
+    });
+
+    // ---------- Ticket generation (client-side) ----------
+    document.getElementById('btnGenerate').addEventListener('click', ()=> {
+      // generate a 3x9 style simplified ticket (15 numbers)
+      const ticket = generateTicket(); // array of numbers
+      const t = { id: 'T'+Date.now(), numbers: ticket, createdAt: Date.now(), status: 'active' };
+      userTickets.push(t);
+      renderTickets();
+      // Optional: push to database under /userTickets/<randomId> if you want:
+      // const uRef = child(rootRef,'userTickets'); push(uRef, t);
+    });
+
+    function renderTickets(){
+      ticketsListEl.innerHTML='';
+      if(userTickets.length===0){ ticketsListEl.innerHTML='<div class="status">You have no tickets</div>'; return; }
+      userTickets.forEach(t=>{
+        const div = document.createElement('div');
+        div.className='ticket';
+        div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${t.id}</strong><div class="status">Created ${new Date(t.createdAt).toLocaleTimeString()}</div></div>
+          <div><button class="outline" data-id="${t.id}">Claim</button></div>
+        </div>
+        <div style="margin-top:8px">${renderTicketGrid(t.numbers)}</div>`;
+        ticketsListEl.appendChild(div);
+      });
+      // attach claim handlers
+      ticketsListEl.querySelectorAll('button[data-id]').forEach(b=>{
+        b.addEventListener('click', ()=> {
+          const id = b.getAttribute('data-id');
+          claimTicket(id);
+        });
+      });
+    }
+
+    function renderTicketGrid(numbers){
+      // show numbers inline
+      return numbers.map(n=>`<span style="display:inline-block;padding:6px 8px;margin:4px;background:rgba(255,255,255,0.02);border-radius:6px;font-weight:700">${n}</span>`).join('');
+    }
+
+    function generateTicket(){
+      // simple: pick 15 unique numbers 1..90
+      const pool = Array.from({length:90}, (_,i)=>i+1);
+      // shuffle and slice
+      for(let i=pool.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [pool[i],pool[j]]=[pool[j],pool[i]];
+      }
+      return pool.slice(0,15).sort((a,b)=>a-b);
+    }
+
+    function claimTicket(id){
+      // local simulate: mark ticket claimed and push to /claims in DB for admin
+      const t = userTickets.find(x=>x.id===id);
+      if(!t) return alert('Ticket not found');
+      if(t.status==='claimed') return alert('Already claimed');
+      // mark locally
+      t.status='claimed';
+      renderTickets();
+      // push claim to DB (admin can verify)
+      const claimsRef = child(rootRef,'claims');
+      push(claimsRef, { ticketId: t.id, numbers: t.numbers, createdAt: Date.now(), userName: 'Guest' })
+      .then(()=> alert('Claim sent to admin for verification.'))
+      .catch(e=> { console.error(e); alert('Claim error'); });
+    }
+
+    // ---------- Countdown handling ----------
+    let countdownTimer = null;
+    function startCountdown(targetTimestamp){
+      if(countdownTimer) clearInterval(countdownTimer);
+      function update(){
+        const diff = targetTimestamp - Date.now();
+        if(diff<=0){
+          countdownEl.textContent = '00:00';
+          clearInterval(countdownTimer);
+          return;
+        }
+        const s = Math.floor(diff/1000);
+        const mm = String(Math.floor(s/60)).padStart(2,'0');
+        const ss = String(s%60).padStart(2,'0');
+        countdownEl.textContent = `${mm}:${ss}`;
+      }
+      update();
+      countdownTimer = setInterval(update,1000);
+    }
+
+    // initial fetch to populate UI (once)
+    (async function initial(){
+      try{
+        const snDraw = await get(child(rootRef,'drawnNumbers'));
+        drawnSet.clear();
+        if(snDraw.exists()){
+          snDraw.forEach(s=> drawnSet.add(parseInt(s.key)) );
+        }
+        renderDrawn();
+
+        const snLeft = await get(child(rootRef,'leftTickets'));
+        leftTicketsEl.textContent = snLeft.exists()? snLeft.val() : '—';
+
+        const snW = await get(child(rootRef,'winners'));
+        winnersBox.innerHTML = '';
+        if(snW.exists()){
+          snW.forEach(s=>{
+            const w = s.val();
+            const row = document.createElement('div');
+            row.style.padding='6px 0';
+            row.innerHTML = `<strong>${w.name||'—'}</strong> • ${w.prize||'—'} ${w.amount?('• ₹'+w.amount):''}`;
+            winnersBox.appendChild(row);
+          });
+        } else winnersBox.innerHTML = '<div class="status">No winners yet</div>';
+
+        const snP = await get(child(rootRef,'prizes'));
+        prizeBox.innerHTML='';
+        if(snP.exists()){
+          snP.forEach(s=>{
+            const div = document.createElement('div');
+            div.style.padding='4px 0';
+            div.innerHTML = `<strong>${s.key}</strong>: <span class="status">${s.val()}</span>`;
+            prizeBox.appendChild(div);
+          });
+        } else prizeBox.innerHTML = '<div class="status">No prize data</div>';
+
+      } catch(e){
+        console.error('initial fetch error', e);
+      }
+    })();
+
+    // make board interactive: clicking a number will show if drawn
+    boardEl.addEventListener('click', (ev)=>{
+      const c = ev.target.closest('.cell');
+      if(!c) return;
+      const n = parseInt(c.textContent);
+      if(drawnSet.has(n)) alert('Number '+n+' is already drawn.');
+      else alert('Number '+n+' not drawn yet.');
+    });
+
+    // final: indicate ready
+    connectionStatus.textContent = 'Ready (connected)';
+
+  </script>
+</body>
+</html>
