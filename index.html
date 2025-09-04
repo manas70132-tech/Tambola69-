@@ -56,41 +56,6 @@ currentGameRef.on("value", snapshot => {
   document.getElementById("currentNumber").innerText = (data && data.number) ? data.number : "--";
 });
   </script>
-<script>
-    <!-- Firebase v8 -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-<p>Current Number: <span id="currentNumber">--</span></p>
-const firebaseConfig = {
-  apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
-  authDomain: "tambola69-9dc8f.firebaseapp.com",
-  projectId: "tambola69-9dc8f",
-  storageBucket: "tambola69-9dc8f.firebasestorage.app",
-  messagingSenderId: "413290158586",
-  appId: "1:413290158586:web:70fff2d94b29206487ec43",
-  measurementId: 
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const currentGameRef = db.ref("games/current");
-
-// Admin function
-function sendNumber() {
-  const num = document.getElementById("gameNumber").value;
-  if(!num) return alert("Please enter a number!");
-  currentGameRef.set({number: num});
-  document.getElementById("gameNumber").value = "";
-  alert("Number sent to users!");
-}
-
-// User live update
-currentGameRef.on("value", snapshot => {
-  const data = snapshot.val();
-  document.getElementById("currentNumber").innerText = (data && data.number) ? data.number : "--";
-});
-  </script>
 
   /* EXACTLY your styles (kept intact) */
   body { font-family: Arial, sans-serif; background:#f0f2f5; margin:0; color:#222; text-align:center; }
