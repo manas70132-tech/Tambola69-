@@ -60,6 +60,29 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+  <script>
+    const __currentGameRef__  = firebase.database().ref("games/current");
+    const __nextGameRef__     = firebase.database().ref("games/next");
+    const __friendsGameRef__  = firebase.database().ref("games/friends");
+
+    // Example: Number call button
+    function callNumber(num) {
+      __currentGameRef__.update({
+        currentNumber: num,
+        updatedAt: Date.now()
+      });
+    }
+
+    // Example: Next Game set karna
+    function setNextGame(details) {
+      __nextGameRef__.set(details);
+    }
+
+    // Example: Friends Game update
+    function updateFriendsGame(details) {
+      __friendsGameRef__.set(details);
+    }
+  </script>
 
 /* Top-level refs */
 const currentGameRef = db.ref('currentGame');
