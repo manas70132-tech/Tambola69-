@@ -3,9 +3,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+
 <title>Tambola 69 - Full Admin Panel</title>
 <style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   body {
   font-family: Arial, sans-serif;
   padding: 20px;
@@ -20,12 +25,7 @@ input, button {
   padding: 10px;
   margin: 5px;
 }
-<!-- Firebase v8 -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-<style>
   /* EXACTLY your styles (kept intact) */
   body { font-family: Arial, sans-serif; background:#f0f2f5; margin:0; color:#222; text-align:center; }
   header { padding:20px; font-size:3em; font-weight:900; color:#ff5722; text-shadow:2px 2px 3px #000; }
