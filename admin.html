@@ -972,6 +972,32 @@ BODY UI sections
   <button onclick="generateBoard('next')">Regenerate Next Board UI</button>
   <button onclick="generateBoard('friends')">Regenerate Friends Board UI</button>
 </div>
+  <script>
+// ==========================
+// ADMIN WRITE LISTENERS
+// ==========================
+
+// Start Game → Firebase me new game reset kare
+document.getElementById("startGameBtn").addEventListener("click", () => {
+  db.ref("currentGame/liveNumber").set(null);  // Reset board
+  db.ref("currentGame/status").set("started"); // Game status update
+  alert("🎉 Game Started!");
+});
+
+// Next Number → Firebase me random number likhna
+document.getElementById("nextNumberBtn").addEventListener("click", () => {
+  let num = Math.floor(Math.random() * 90) + 1;
+  db.ref("currentGame/liveNumber").set(num);
+  console.log("👉 Next Number:", num);
+});
+
+// Reset Game → Firebase clean
+document.getElementById("resetBtn").addEventListener("click", () => {
+  db.ref("currentGame/liveNumber").set(null);
+  db.ref("currentGame/status").set("reset");
+  alert("♻️ Game Reset!");
+});
+</script>
 
 </body>
 </html>
