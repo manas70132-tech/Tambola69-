@@ -380,6 +380,8 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+  const currentGameRef = db.ref("games/current");
+const nextGameRef = db.ref("games/next");
 
 /* ================= Elements ================= */
 const boardEl = document.getElementById('board');
