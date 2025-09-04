@@ -50,14 +50,12 @@
    Put your Firebase config here
    ======================= */
 var firebaseConfig = {
-  apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+    apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
   authDomain: "tambola69-9dc8f.firebaseapp.com",
-  databaseURL: "https://tambola69-9dc8f.firebaseio.com",
   projectId: "tambola69-9dc8f",
-  storageBucket: "tambola69-9dc8f.appspot.com",
+  storageBucket: "tambola69-9dc8f.firebasestorage.app",
   messagingSenderId: "413290158586",
-  appId: "1:413290158586:web:70fff2d94b29206487ec43"
-};</script>
+  appId: "1:413290158586:web:70fff2d94b29206487ec43", };</script>
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
   <script>
@@ -83,6 +81,7 @@ const db = firebase.database();
       __friendsGameRef__.set(details);
     }
   </script>
+
 
 /* Top-level refs */
 const currentGameRef = db.ref('currentGame');
