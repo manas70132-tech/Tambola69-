@@ -971,6 +971,27 @@ BODY UI sections (full features)
   <button onclick="generateBoard('next')">Regenerate Next Board UI</button>
   <button onclick="generateBoard('friends')">Regenerate Friends Board UI</button>
 </div>
+  <script>
+  function drawNumber(num) {
+    // नंबर Firebase में भेजना
+    db.ref("drawnNumbers").push(num);
+  }
+
+  function setPrize(prizeName, amount) {
+    // प्राइज़ Firebase में अपडेट करना
+    db.ref("prizes/" + prizeName).set({
+      amount: amount,
+      claimed: false
+    });
+  }
+
+  function updateTickets(total, left) {
+    db.ref("tickets").set({
+      total: total,
+      left: left
+    });
+  }
+  </script>
 
 </body>
 </html>
