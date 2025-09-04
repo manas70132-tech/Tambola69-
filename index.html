@@ -1295,6 +1295,30 @@ musicBtn.addEventListener("click", ()=>{
   }
 });
 </script>
+  <script>
+  // 🔴 लाइव नंबर सुनना
+  db.ref("drawnNumbers").on("child_added", (snapshot) => {
+    let num = snapshot.val();
+    document.getElementById("live-board").innerHTML += `<div>${num}</div>`;
+  });
+
+  // 🔴 प्राइज़ सुनना
+  db.ref("prizes").on("value", (snapshot) => {
+    let data = snapshot.val();
+    let box = document.getElementById("prize-box");
+    box.innerHTML = "";
+    for (let key in data) {
+      box.innerHTML += `<p>${key}: ${data[key].amount} (${data[key].claimed ? "X" : "Available"})</p>`;
+    }
+  });
+
+  // 🔴 टिकट डेटा सुनना
+  db.ref("tickets").on("value", (snapshot) => {
+    let t = snapshot.val();
+    document.getElementById("ticket-info").innerText =
+      `Total: ${t.total}, Left: ${t.left}`;
+  });
+  </script>
 
 </body>
 </html>
