@@ -76,6 +76,26 @@ const firebaseConfig = {
   appId: "1:493683274691:web:324798f4f9517770454376",
   measurementId: "G-P1RBZMS9P7"
 };
+  firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const currentGameRef = db.ref("games/current");
+
+// ✅ ADMIN FUNCTION: Send number to users
+function sendNumber() {
+  const num = document.getElementById("gameNumber").value;
+  if(!num) return alert("Please enter a number!");
+  currentGameRef.set({number: num});
+  document.getElementById("gameNumber").value = "";
+  alert("Number sent to users!");
+}
+
+
+
+// ✅ OPTIONAL: Log updates (debug)
+currentGameRef.on("value", snapshot => {
+  console.log("Live update:", snapshot.val());
+});
+
 
 /* Top-level refs (default paths) */
 const currentGameRef = db.ref('currentGame');
