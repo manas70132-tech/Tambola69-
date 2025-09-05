@@ -68,15 +68,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// Check if Firebase is already initialized to prevent errors
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-    // Connection successful feedback
-    console.log("Firebase connection successful!");
-    alert("Firebase connected! You can now control the game.");
-} else {
-    console.log("Firebase app already running.");
-}
 
 const db = firebase.database();
 
