@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tambola 69 - Full Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+</head>
+<body>
+  <h1>🎛️ Tambola 69 - Admin Panel</h1>
+
+  <div class="section">
+    <h2>🎵 Music Control</h2>
+    <input type="text" id="musicUrlInput" placeholder="Enter music stream URL" style="width:70%">
+    <button onclick="saveMusicUrl()">Save URL</button>
+    <button id="toggleMusicBtn" onclick="toggleMusic()">▶️ Play</button>
+    <div class="muted">Clients will auto-play if their local mute is off.</div>
+  </div>
+
+  <div class="section">
+    <h2>🎬 वीडियो कंट्रोल</h2>
+    <input type="text" id="videoUrlInput" placeholder="वीडियो स्ट्रीम URL डालें" style="width:70%">
+    <button onclick="saveVideoUrl()">URL सेव करें</button>
+    <button id="toggleVideoBtn" onclick="toggleVideo()">▶️ प्ले</button>
+    <div class="muted">क्लाइंट्स वीडियो ऑटो-प्ले करेंगे अगर उनका म्यूट ऑफ है।</div>
+  </div>
+
+  <div class="section">
+    <h2>🖼️ Slider Control</h2>
+    <div class="action-row">
+      <button onclick="addSlideRow()">+ Add Slide</button>
+      <button onclick="saveSlidesAdvanced()">Save Slides</button>
+      <button id="toggleSliderBtn" onclick="toggleSliderPlay()">▶️ Play</button>
+      <button onclick="prevSlide()">⏮ Prev</button>
+      <button onclick="nextSlide()">⏭ Next</button>
+      <input id="gotoIndexInput" type="number" class="small" placeholder="Go to index">
+      <button onclick="goToSlide()">Go</button>
+      <input id="speedInput" type="number" class="small" placeholder="Speed (ms)">
+      <button onclick="setSpeed()">Set Speed</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Actions</th>
+            <th>Image URL</th>
+            <th>Link URL</th>
+            <th>Title</th>
+            <th>Button</th>
+            <th>Size</th>
+          </tr>
+        </thead>
+        <tbody id="slidesTbody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px">
+      <div class="live-box">Slides: <span id="slidesCount">0</span></div>
+      <div class="live-box">Index: <span id="currentIndexDisplay">0</span></div>
+      <div class="live-box">Speed: <span id="speedDisplay">0 ms</span></div>
+    </div>
+    <div class="muted">Clients should read <code>/slider</code>.</div>
+  </div>
+
+  <div class="section">
+    <h2>🟢 Current Game</h2>
+    <div class="action-row">
+      <button onclick="startGame('current')">Start Game</button>
+      <button onclick="stopGame('current')">Stop Game</button>
+      <button onclick="resetGame('current')">Reset Game</button>
+      <div class="live-box">Status: <span id="currentStatusDisplay">idle</span></div>
+    </div>
+    <div class="action-row" style="margin-top:8px">
+      <input id="currentPrizeInput" type="number" min="1" max="100" placeholder="Prize %"><button onclick="updatePrize('current')">Update Prize</button>
+      <div class="live-box">Prize: <span id="currentPrizeDisplay">0%</span></div>
+    </div>
+    <h3>Tambola Board</h3>
+    <div id="currentTambolaBoard" class="tambola-board"></div>
+    <h3>Withdrawal Requests</h3>
+    <div id="currentWithdrawals"></div>
+  </div>
+
+  <div class="section">
+    <h2>🟡 Next Game</h2>
+    <div class="action-row">
+      <button onclick="startGame('next')">Start Game</button>
+      <button onclick="stopGame('next')">Stop Game</button>
+      <button onclick="resetGame('next')">Reset Game</button>
+      <div class="live-box">Status: <span id="nextStatusDisplay">idle</span></div>
+    </div>
+    <h3>Tambola Board</h3>
+    <div id="nextTambolaBoard" class="tambola-board"></div>
+    <h3>Withdrawal Requests</h3>
+    <div id="nextWithdrawals"></div>
+  </div>
+
+  <div class="section">
+    <h2>🎮 Play With Friends</h2>
+    <div class="action-row">
+      <button onclick="startGame('friends')">Start Game</button>
+      <button onclick="stopGame('friends')">Stop Game</button>
+      <button onclick="resetGame('friends')">Reset Game</button>
+      <div class="live-box">Status: <span id="friendsStatusDisplay">idle</span></div>
+    </div>
+    <div class="room-select">
+      <input type="text" id="roomSearch" onkeyup="filterRooms()" placeholder="🔍 Search Room...">
+      <select id="roomDropdown" onchange="changeRoom()"></select>
+    </div>
+    <h3>Tambola Board</h3>
+    <div id="friendsTambolaBoard" class="tambola-board"></div>
+    <h3>Withdrawal Requests</h3>
+    <div id="friendsWithdrawals"></div>
+  </div>
+
+  <div class="section">
+    <h2>📢 Notifications</h2>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="notifyTo" type="text" placeholder="User ID (optional)" style="width:40%">
+      <label><input id="notifyBroadcast" type="checkbox"> Broadcast to all</label>
+    </div>
+    <textarea id="notifyMessage" placeholder="Enter message..."></textarea>
+    <button onclick="sendNotification()">Send Notification</button>
+  </div>
+
+  <div class="section">
+    <h2>💸 Withdrawal Requests</h2>
+    <div id="withdrawalsList">Loading withdrawals...</div>
+  </div>
+
+  <div class="section">
+    <h2>👥 User Tickets</h2>
+    <div id="usersTicketsList">Loading users & tickets...</div>
+  </div>
+
+  <div class="section">
+    <h2>🏆 Claims</h2>
+    <div id="claimsList">Loading claims...</div>
+  </div>
+
+  <script src="admin-script.js"></script>
+</body>
+</html>
