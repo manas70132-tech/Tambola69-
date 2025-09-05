@@ -1,25 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><!-- Firebase v8 SDK -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Tambola 69 </title>
+<head>
+  <meta charset="UTF-8">
+  <title>Tambola 69 - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+  <script>
+    // ✅ Firebase Config (अपना config यहाँ डालें)
+    const firebaseConfig = {
+      
+    apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
   authDomain: "tambola69-9dc8f.firebaseapp.com",
   projectId: "tambola69-9dc8f",
   storageBucket: "tambola69-9dc8f.firebasestorage.app",
   messagingSenderId: "413290158586",
   appId: "1:413290158586:web:70fff2d94b29206487ec43",};
-  firebase.initializeApp(firebaseConfig);
-  
+    firebase.initializeApp(firebaseConfig);
 
-<style>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button { padding: 10px; margin: 5px; }
+  
   /* EXACTLY your styles (kept intact) */
   body { font-family: Arial, sans-serif; background:#f0f2f5; margin:0; color:#222; text-align:center; }
   header { padding:20px; font-size:3em; font-weight:900; color:#ff5722; text-shadow:2px 2px 3px #000; }
