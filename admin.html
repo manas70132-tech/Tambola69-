@@ -40,7 +40,21 @@
 </head>
 <body>
 <h1>🎛️ Tambola 69 - Admin Panel</h1>
+  
+<script>
+function updatePrizes() {
+  let topLine = document.getElementById("topLineInput").value;
+  let fullHouse = document.getElementById("fullHouseInput").value;
 
+  // Firebase में data update
+  db.ref("game/prizes").set({
+    topLine: topLine,
+    fullHouse: fullHouse
+  });
+
+  alert("Prizes updated successfully!");
+}
+</script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
