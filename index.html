@@ -1307,6 +1307,16 @@ musicBtn.addEventListener("click", ()=>{
     musicBtn.style.opacity="0.5";
   }
 });
+  <p>Current Number: <span id="currentNumber">--</span></p>
+
+<script>
+  // ✅ Firebase Listener
+  firebase.database().ref("games/current").on("value", (snapshot) => {
+    if(snapshot.exists()) {
+      let data = snapshot.val();
+      document.getElementById("currentNumber").innerText = data.number;
+    }
+  });
 </script>
 
 </body>
