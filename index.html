@@ -343,13 +343,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-// Initialize Firebase
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-    console.log("Firebase connection successful!");
-} else {
-    console.log("Firebase app already running.");
-}
+
 
 const db = firebase.database();
 
