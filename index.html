@@ -1203,6 +1203,16 @@ musicBtn.addEventListener("click", ()=>{
   }
 });
 </script>
+  <script>
+// Live listener for prize updates
+db.ref("game/prizes").on("value", (snapshot) => {
+  let data = snapshot.val();
+  if (data) {
+    document.getElementById("topLine").innerText = data.topLine;
+    document.getElementById("fullHouse").innerText = data.fullHouse;
+  }
+});
+</script>
 
 </body>
 </html>
