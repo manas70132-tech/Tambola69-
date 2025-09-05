@@ -68,7 +68,19 @@ if (!firebase.apps.length) {
 }
 
 const db = firebase.database();
+    // ✅ Update Message
+    function updateMessage() {
+      const msg = document.getElementById("adminMessage").value;
+      db.ref("updates/message").set(msg);
+      alert("Message updated!");
+    }
 
+    // ✅ Set Timer
+    function setTimer() {
+      const time = document.getElementById("countdown").value;
+      db.ref("updates/timer").set(time);
+      alert("Timer updated!");
+  }
 /* Top-level refs */
 const currentGameRef = db.ref('currentGame');
 const nextGameRef = db.ref('nextGame');
