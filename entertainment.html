@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Tambola 69 - User</title>
+<title>Tambola 69 </title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -334,6 +334,77 @@ navigator.serviceWorker.register("/service-worker.js"
 
   <div id="messageBox">Waiting for admin update...</div>
   <div id="timerBox">Timer: 0</div>
+    /* Overlay Animation */
+    .overlay {
+      position:fixed; inset:0;
+      display:flex; justify-content:center; align-items:center;
+      background:#071027; z-index:9999;
+    }
+    .overlay.hide { animation: fadeOut .7s forwards; }
+    @keyframes fadeOut { to { opacity:0; visibility:hidden; } }
+
+    .logo-card {
+      width:280px; height:280px; border-radius:28px;
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      background:rgba(255,255,255,0.05);
+      animation: zoomIn 1s forwards;
+    }
+    .logo-icon {
+      width:120px; height:120px; border-radius:50%;
+      display:flex; justify-content:center; align-items:center;
+      font-size:42px; font-weight:800; color:#0b1020;
+      background:radial-gradient(circle at 30% 20%, #ffd166, #ff7b7b 60%);
+      animation: bounce 1.2s .3s forwards;
+    }
+    .logo-text { margin-top:12px; font-size:18px; opacity:0; animation: fadeUp .8s 1s forwards; }
+
+    @keyframes zoomIn { from{transform:scale(.6);opacity:0;} to{transform:scale(1);opacity:1;} }
+    @keyframes bounce { 0%{transform:translateY(20px);} 60%{transform:translateY(-8px);} 100%{transform:translateY(0);} }
+    @keyframes fadeUp { to{opacity:1; transform:translateY(0);} }
+
+    /* App */
+    .app { display:none; padding:20px; max-width:400px; margin:40px auto; }
+    .card { background:rgba(255,255,255,0.06); padding:18px; border-radius:12px; margin-bottom:18px; }
+    input { width:100%; padding:10px; margin:8px 0; border:none; border-radius:8px; }
+    button { width:100%; padding:10px; border:none; border-radius:8px; cursor:pointer;
+      background:linear-gradient(90deg,#4cc9f0,#4361ee); color:#fff; font-weight:600; }
+    #logoutBtn { background:#ff595e; margin-top:10px; }
+    #otpInput, #verifyOtpBtn { display:none; }
+  </style>
+</head>
+<body>
+
+  <!-- Welcome Animation -->
+  <div id="overlay" class="overlay">
+    <div class="logo-card">
+      <div class="logo-icon">69</div>
+      <div class="logo-text">Welcome to Tambola 69</div>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="app">
+    <!-- Login -->
+    <div id="loginSection" class="card">
+      <h2>Login</h2>
+      <input id="nameInput" placeholder="आपका नाम" />
+      <input id="emailInput" placeholder="Email" type="email" />
+      <input id="phoneInput" placeholder="Phone (+91...)" />
+      <div id="recaptcha-container"></div>
+      <button id="sendOtpBtn">Send OTP</button>
+      <input id="otpInput" placeholder="Enter OTP" />
+      <button id="verifyOtpBtn">Verify OTP</button>
+      <p id="loginMsg"></p>
+    </div>
+
+    <!-- Main -->
+    <div id="mainSection" class="card" style="display:none;">
+      <h2>Welcome, <span id="userName"></span></h2>
+      <p>Contact: <span id="userContact"></span></p>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -352,6 +423,84 @@ navigator.serviceWorker.register("/service-worker.js"
 };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    // Elements
+    const overlay = document.getElementById("overlay");
+    const app = document.getElementById("app");
+    const loginSection = document.getElementById("loginSection");
+    const mainSection = document.getElementById("mainSection");
+    const userName = document.getElementById("userName");
+    const userContact = document.getElementById("userContact");
+    const nameInput = document.getElementById("nameInput");
+    const emailInput = document.getElementById("emailInput");
+    const phoneInput = document.getElementById("phoneInput");
+    const sendOtpBtn = document.getElementById("sendOtpBtn");
+    const otpInput = document.getElementById("otpInput");
+    const verifyOtpBtn = document.getElementById("verifyOtpBtn");
+    const loginMsg = document.getElementById("loginMsg");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    let confirmationResult;
+
+    // Overlay hide after animation
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        overlay.classList.add("hide");
+        overlay.addEventListener("animationend", () => {
+          overlay.style.display="none";
+          app.style.display="block";
+          autoLogin();
+        }, {once:true});
+      }, 1800);
+    });
+
+    // Send OTP
+    sendOtpBtn.addEventListener("click", () => {
+      const phone = phoneInput.value;
+      if (!phone) { alert("Phone डालें"); return; }
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:"invisible"});
+      auth.signInWithPhoneNumber(phone, window.recaptchaVerifier)
+        .then(res => {
+          confirmationResult = res;
+          otpInput.style.display="block";
+          verifyOtpBtn.style.display="block";
+          loginMsg.innerText = "OTP sent!";
+        })
+        .catch(err => { loginMsg.innerText = err.message; });
+    });
+
+    // Verify OTP
+    verifyOtpBtn.addEventListener("click", () => {
+      const code = otpInput.value;
+      confirmationResult.confirm(code).then(result => {
+        const user = result.user;
+        const profile = {
+          name: nameInput.value || "Player",
+          contact: emailInput.value || user.phoneNumber
+        };
+        localStorage.setItem("tambola_user", JSON.stringify(profile));
+        showMain(profile);
+      }).catch(err => loginMsg.innerText="OTP invalid!");
+    });
+
+    // Auto login
+    function autoLogin() {
+      const saved = localStorage.getItem("tambola_user");
+      if (saved) showMain(JSON.parse(saved));
+    }
+
+    function showMain(profile) {
+      loginSection.style.display="none";
+      mainSection.style.display="block";
+      userName.innerText=profile.name;
+      userContact.innerText=profile.contact;
+    }
+
+    logoutBtn.addEventListener("click", () => {
+      auth.signOut();
+      localStorage.removeItem("tambola_user");
+      location.reload();
+    });
+  
 
     // ✅ Listen for Admin Message
     db.ref("updates/message").on("value", snapshot => {
