@@ -1,0 +1,20 @@
+{
+"name": "Tambola 69",
+"short_name": "Tambola",
+"start_url": "./index.html",
+"display": "standalone",
+"background_color": "#111111",
+"theme_color": "#111111",
+"orientation": "portrait",
+"icons": [
+{
+"src": "icon-192.png",
+"sizes": "192×192",
+"type": "image/png"
+},
+{
+"src": "icon-512.png",
+"sizes": 512-512",
+"type": "image/png}
+]
+}
