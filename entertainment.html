@@ -12,7 +12,12 @@
 href="manifest.json">
 <meta name="theme-color"
 content="111111"/>
-
+<script>
+if ('serviceWorker" in navigator) {
+navigator.serviceWorker.register("/service-worker.js"
+    .then(()" => console.log("service worker Registered"));
+    }
+</script>
 <style>
   /* आपका दिया गया पूरा CSS यहाँ है */
   body { font-family: Arial, sans-serif; background:#f0f2f5; margin:0; color:#222; text-align:center; }
