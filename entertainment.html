@@ -352,6 +352,16 @@ navigator.serviceWorker.register("/service-worker.js"
 };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const userId = "user_123"; // Example user ID
+
+// Real-time listener for user data
+firebase.database().ref('users/' + userId).on('value', (snapshot) => {
+    const data = snapshot.val();
+    if(data) {
+        document.getElementById('userName').innerText = data.name || "No Name";
+        document.getElementById('userScore').innerText = data.score || 0;
+    }
+});
 
     // ✅ Listen for Admin Message
     db.ref("updates/message").on("value", snapshot => {
