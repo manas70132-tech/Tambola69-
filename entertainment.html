@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tambola 69 — Dark Neon Login (Email / Phone OTP)</title>
+  <style>
+    /* ---------- Basic & Dark Neon Theme ---------- */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(70,0,150,0.12), transparent),
+                  radial-gradient(900px 500px at 90% 90%, rgba(0,200,255,0.06), transparent),
+                  #02020a;
+      color:#e6f7ff;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+      padding:20px;
+    }
+
+    /* ---------- Center app ---------- */
+    .wrap{max-width:980px;margin:28px auto;display:flex;gap:24px;flex-direction:column;align-items:center;}
+
+    /* ---------- Overlay / Welcome Animation ---------- */
+    .overlay{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.55));
+      z-index:9999;
+    }
+    .card-anim{
+      width:360px;height:360px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      box-shadow: 0 10px 40px rgba(0,0,0,0.7), 0 0 40px rgba(138,43,226,0.06) inset;
+      transform-origin:center;
+      animation:animPop 900ms cubic-bezier(.2,.9,.2,1) both;
+    }
+    .logo-neon{
+      width:132px;height:132px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-weight:900;font-size:48px;color:#0b1020;
+      background: radial-gradient(circle at 30% 25%, #ffd166 0%, #ff5c7c 60%);
+      box-shadow: 0 6px 30px rgba(255,92,124,0.14), 0 0 30px rgba(255,92,124,0.12);
+      transform:translateY(6px);
+    }
+    .anim-text {
+      margin-top:14px;font-size:18px;letter-spacing:0.6px;opacity:0;transform:translateY(8px);
+      color: #bfe9ff;
+      text-shadow: 0 0 12px rgba(80,220,255,0.25);
+      animation:fadeUp .7s 600ms forwards;
+    }
+
+    /* Neon "Congratulations" inside animation */
+    .neon-congrats{
+      margin-top:12px;font-size:20px;font-weight:700;color:#fff;
+      letter-spacing:0.6px;
+      text-shadow:
+        0 0 6px rgba(255,170,0,0.9),
+        0 0 24px rgba(255,120,0,0.25),
+        0 0 40px rgba(255,90,0,0.12);
+      opacity:0; transform:translateY(6px);
+      animation:glowIn .7s 1s forwards;
+    }
+
+    @keyframes animPop{ from{transform:scale(.6) rotate(-6deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+    @keyframes fadeUp{ to{opacity:1; transform:translateY(0)} }
+    @keyframes glowIn{ to{opacity:1; transform:translateY(0)} }
+
+    .overlay.hide{ animation: overlayHide .6s forwards; }
+    @keyframes overlayHide{ to{opacity:0; visibility:hidden;} }
+
+    /* ---------- App layout (main) ---------- */
+    .app{ width:100%; max-width:960px; display:none; margin-top:8px; }
+    .grid{ display:grid; grid-template-columns:1fr 420px; gap:22px; align-items:start; }
+    @media (max-width:920px){ .grid{ grid-template-columns:1fr; } }
+
+    /* Left: Info / Dashboard */
+    .left-card{ padding:22px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); box-shadow: 0 8px 36px rgba(0,0,0,0.6); min-height:220px; }
+    h1{ font-size:20px; margin-bottom:8px; color:#e9fcff; text-shadow: 0 2px 8px rgba(0,140,255,0.05); }
+    p.lead{ color:#9fcbe6; margin-bottom:10px; }
+
+    /* Right: Login Card */
+    .login-card{ padding:18px; border-radius:12px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); box-shadow: 0 8px 40px rgba(0,0,0,0.6); position:relative; border:1px solid rgba(80,200,255,0.04); }
+    .glass {
+      backdrop-filter: blur(6px);
+    }
+
+    .field{ margin-bottom:10px; }
+    input[type="text"], input[type="email"], input[type="password"], input[type="tel"]{
+      width:100%; padding:12px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background: rgba(0,8,20,0.45); color:#e8f8ff; outline:none;
+    }
+    .btn{ width:100%; padding:11px; border-radius:10px; border:none; cursor:pointer; font-weight:700; background: linear-gradient(90deg,#4cc9f0,#4361ee); color:#fff; box-shadow:0 8px 30px rgba(67,97,238,0.12); }
+    .btn.ghost{ background:transparent; border:1px solid rgba(255,255,255,0.04); color:#bff; }
+    .muted{ font-size:13px; color:#9fcbe6; margin-top:8px; }
+
+    .row{ display:flex; gap:8px; }
+    .small{ font-size:13px; color:#a7d6ff; }
+
+    /* Neon success popup (second Congratulations) */
+    .success-popup{
+      position:fixed; right:24px; bottom:24px; width:320px; max-width:90%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius:12px; padding:14px; box-shadow:0 12px 50px rgba(0,0,0,0.6);
+      border:1px solid rgba(255,160,0,0.12); display:none; z-index:9998;
+    }
+    .success-popup h3{ margin-bottom:8px; color:#fff; text-shadow: 0 0 16px rgba(255,190,60,0.25); }
+    .success-popup .msg{ color:#dfefff; }
+
+    /* helper */
+    .hidden{ display:none !important; }
+    .center{ display:flex; justify-content:center; align-items:center; }
+
+    /* small link */
+    .linklike{ background:transparent;border:none;color:#9fefff;cursor:pointer;font-weight:700;padding:0; }
+  </style>
+</head>
+<body>
+  <!-- ---------- Welcome overlay with first "Congratulations" ---------- -->
+  <div id="overlay" class="overlay" aria-hidden="false">
+    <div class="card-anim center">
+      <div class="logo-neon">69</div>
+      <div class="anim-text">Welcome to Tambola 69</div>
+      <div class="neon-congrats">Congratulations 🎉</div>
+    </div>
+  </div>
+
+  <!-- ---------- Main app content (hidden until overlay hides) ---------- -->
+ <div id="user app"
+ style="display:none;">
+ 
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+  <meta charset="UTF-8" />
+  <title>Tambola 69 - User</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <link rel="manifest"
+  href="manifest.json">
+  <meta name="theme-color"
+  content="111111"/>
+  <script>
+  if ('serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js"
+  .then(()" => console.log("service worker Registered"));
+  }
+  </script>
+  <style>
+  /* आपका दिया गया पूरा CSS यहाँ है */
+  body { font-family: Arial, sans-serif; background:#f0f2f5; margin:0; color:#222; text-align:center; }
+  header { padding:20px; font-size:3em; font-weight:900; color:#ff5722; text-shadow:2px 2px 3px #000; }
+  h2 { font-size:2em; color:#2196f3; margin:10px 0; text-shadow:1px 1px 2px #555; }
+  .live-number{font-size:32px; color:green; font-weight:800; margin:10px;}
+  .viewer-count{font-size:18px; margin:5px;}
+  .prize-box{max-width:680px;margin:10px auto;padding:15px;border-radius:12px;background:linear-gradient(135deg,#ff3cac,#784ba0,#2b86c5,#43e97b);color:#fff;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.3);text-align:left;}
+  .prize-box span{display:block;margin:4px 0;font-size:16px;}
+  .user-ticket{max-width:680px;margin:10px auto;display:none;}
+  .ticket-shell{border:3px solid #111;border-radius:12px;display:inline-block;padding:10px;position:relative;background:#fff;}
+  .ticket-serial{position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:#fff;padding:4px 8px;border-radius:999px;border:1px solid #111;font-weight:800;}
+  .ticket{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;}
+  .ticket-cell{padding:10px;border-radius:6px;font-weight:700;cursor:pointer;user-select:none;border:1px solid #333;position:relative;transition:0.2s;background:#fff;}
+  .ticket-cell.empty{background:transparent;border-style:dashed;cursor:default;color:transparent;}
+  .ticket-cell.ticked::after{content:"✓";position:absolute;top:2px;right:2px;background:green;color:#fff;padding:1px 3px;border-radius:50%;font-weight:900;font-size:10px;pointer-events:none;box-shadow:0 0 2px rgba(0,0,0,0.4);}
+  .ticket-cell.buggy{box-shadow:inset 0 0 0 3px rgba(255,0,0,0.12); background:linear-gradient(90deg, rgba(255,200,200,0.4), rgba(255,230,230,0.2));}
+  .claim-buttons{margin:10px;}
+  .claim-button{background:green;color:#fff;padding:10px 12px;border:none;border-radius:6px;cursor:pointer;margin:4px;font-weight:700;}
+  .claimed-box, .winners-box, .next-game-box, .play-friends-box, .history-box{max-width:500px;margin:8px auto;padding:12px;border-radius:12px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+  .claimed-line{color:red;font-weight:700;}
+  .book-ticket, .join-game-button{background:#ff6600;color:#fff;padding:10px 20px;border:none;border-radius:8px;margin:10px;cursor:pointer;font-weight:700;}
+  .book-ticket:hover, .join-game-button:hover{background:#e55b00;}
+  .next-game-box h3, .play-friends-box h3, .claimed-box h3, .winners-box h3, .history-box h3{margin-bottom:8px;}
+  .next-game-info, .friends-info{display:flex;justify-content:space-around;font-weight:700;flex-wrap:wrap;gap:8px;}
+  .board{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;max-width:600px;margin:10px auto;}
+  .board-cell{padding:8px;border-radius:6px;font-weight:700;background:#ddd;transition:0.3s;}
+  .board-cell.black{background:#000;color:#fff;}
+  .board-cell.highlight{background:orange !important;}
+  .menu{position:fixed;top:12px;right:12px;z-index:9999;}
+  .hamburger{width:42px;height:34px;border-radius:10px;border:2px solid #111;background:#fff;display:flex;flex-direction:column;justify-content:space-around;padding:6px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+  .hamburger span{height:3px;border-radius:2px;background:#111;}
+  .menu-panel{position:fixed;top:56px;right:12px;width:320px;background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;box-shadow:0 8px 16px rgba(0,0,0,0.15);display:none;text-align:left;}
+  .menu-panel.show{display:block;}
+  .menu-panel h4{margin:4px 0 8px;font-size:18px;}
+  .menu-row{margin:8px 0;padding:8px;border:1px dashed #ccc;border-radius:10px;}
+  .menu-row strong{font-size:16px;}
+  .menu-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .menu-btn{background:#111;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700;}
+  .menu-btn.secondary{background:#444;}
+  .menu-note{font-size:12px;color:#555;margin-top:6px;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#fff;color:#000;font-weight:700;font-size:12px;margin-left:6px;}
+  .muted{opacity:0.85;font-weight:600;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center;}
+  input[type="text"], input[type="tel"], input[type="email"], input[type="number"]{
+  padding:8px 10px;border:1px solid #ccc;border-radius:8px;min-width:180px;
+  }
+  .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; z-index:10000;}
+  .modal{background:#fff; width:92%; max-width:420px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.3); padding:16px; text-align:left;}
+  .modal h3{margin:0 0 8px;}
+  .modal label{font-size:14px;font-weight:700;display:block;margin-top:8px;}
+  .modal input{width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;margin-top:6px;}
+  .modal .row{display:flex;gap:8px;margin-top:10px;}
+  .modal .btn{background:#ff6600;color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:700;}
+  .modal .btn.secondary{background:#555;}
+  .modal .note{font-size:12px;color:#666;margin-top:6px;}
+  .waiting-wrapper{max-width:720px;margin:18px auto;position:relative;}
+  .waiting-box{
+  background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.65));
+  border-radius:16px;
+  padding:18px 18px 36px 18px;
+  box-shadow: 0 12px 30px rgba(20,30,60,0.12);
+  border: 1px solid rgba(255,255,255,0.5);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  text-align:center;
+  position:relative;
+  }
+  .waiting-title{font-size:20px;font-weight:900;color:#222;margin:0;}
+  .waiting-desc{margin-top:6px;color:#444;font-weight:700;}
+  .waiting-latest{margin-top:12px;font-size:28px;font-weight:900;color:#1b5e20;}
+  .waiting-live-pill{
+  position:absolute;
+  left:14px;
+  bottom:12px;
+  background:linear-gradient(90deg,#0d47a1,#1976d2);
+  color:#fff;
+  padding:8px 12px;
+  border-radius:10px;
+  font-weight:900;
+  box-shadow:0 6px 18px rgba(25,118,210,0.18);
+  display:flex;
+  gap:8px;
+  align-items:center;
+  }
+  .waiting-live-pill .dot{width:10px;height:10px;border-radius:50%;background:#00e676;box-shadow:0 0 6px rgba(0,230,118,0.6)}
+  @media(max-width:700px){
+  .waiting-wrapper{padding:0 12px;}
+  .waiting-latest{font-size:20px;}
+  }
+  .winner-x { color:#ffeb3b; font-weight:900; margin-right:6px; }
+  .winner-row { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; }
+  </style>
+  </head>
+  <body>
+  <button id="musicBtn" 
+  style="position:fixed; top:12px; left:12px; font-size:22px; z-index:10000;
+  background:#fff; color:#111; border:2px solid #111; border-radius:10px; padding:6px 10px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+  🎵
+  </button>
+  <audio id="liveMusic" autoplay loop></audio>
+  
+  <header>Tambola 69</header>
+  <h2>Step Into The Excitement!</h2>
+  <h4>“We hope luck is always on your side!” 🎉</h4>
+  
+  <div class="menu">
+  <div class="hamburger" id="menuToggle" aria-label="Options"><span></span><span></span><span></span></div>
+  </div>
+  <div class="menu-panel" id="menuPanel">
+  <h4>Options</h4>
+  <div class="menu-row">
+  <strong>🏆 Your Winnings: ₹<span id="myWinnings">0</span></strong>
+  <div class="menu-note">If you haven't won yet, this shows ₹0.</div>
+  </div>
+  <div class="menu-row">
+  <strong>💸 Cash Withdrawal</strong>
+  <div class="menu-actions">
+  <button class="menu-btn" id="withdrawBtn">Withdraw Now</button>
+  <button class="menu-btn secondary" id="sendUPIBtn">Send UPI/Phone</button>
+  </div>
+  <div class="menu-note">Enter amount and your UPI or phone. We’ll receive your request instantly.</div>
+  </div>
+  <div class="menu-row">
+  <strong>📣 Share App</strong>
+  <div class="menu-actions">
+  <button class="menu-btn" id="shareNative">Share</button>
+  <button class="menu-btn secondary" id="shareWhatsApp">WhatsApp</button>
+  <button class="menu-btn secondary" id="shareFacebook">Facebook</button>
+  <button class="menu-btn secondary" id="shareInstagram">Instagram</button>
+  </div>
+  <div class="menu-note">Invite friends via your favourite app.</div>
+  </div>
+  <div class="menu-row">
+  <strong>👤 User Profile</strong>
+  <div class="menu-actions">
+  <button class="menu-btn" id="viewProfileBtn">View Profile</button>
+  </div>
+  <div class="menu-note">See your User ID, Name, Contact & Email.</div>
+  </div>
+  <div class="menu-row">
+  <strong>⚙️ Auto Options</strong>
+  <div class="menu-actions">
+  <label style="display:flex;align-items:center;gap:8px;">
+  <input type="checkbox" id="autoTickToggle" /> Auto-Tick
+  </label>
+  <label style="display:flex;align-items:center;gap:8px;">
+  <input type="checkbox" id="autoClaimToggle" /> Auto-Claim
+  </label>
+  </div>
+  <div class="menu-note">Auto-Tick marks numbers on your ticket as they are drawn. Auto-Claim will submit valid claims automatically.</div>
+  </div>
+  </div>
+  
+  <div class="prize-box">
+  <h2> Mega contest <h2/>
+  <span>Prize list :-</span>
+  <span>* Early Five Prize: ₹ 500</span>
+  <span>* Ticket Corner Prize: ₹ 500</span>
+  <span>* Each Line Prize: ₹ 500</span>
+  <span>* Full House Prize: ₹ 3000</span>
+  <span># 2nd Full House Prize ₹ 1000” 🎉</span>
+  <span># Try Your Luck !</span>
+  </div>
+  
+  <div class="waiting-wrapper">
+  <div class="waiting-box" id="waitingBox">
+  <div class="waiting-title" id="waitingTitle">Waiting for Draw...</div>
+  <div class="waiting-desc" id="waitingDesc">No active room • Global draw idle</div>
+  <div class="waiting-latest" id="latestNumber">—</div>
+  <div class="waiting-live-pill" id="waitingLive">
+  <div class="dot" id="liveDot"></div>
+  <div id="waitingLiveText">Live Users: 0</div>
+  </div>
+  </div>
+  </div>
+  
+  <div class="next-game-box" id="nextGameBoxTop">
+  <h3>Game Starts In ⏳</h3>
+  <div class="next-game-info">
+  <span id="nextCountdownTop">00:00</span>
+  <span id="ticketsLeftTop">Tickets Left: 0</span>
+  <span id="prizePercentageTop">Prize %: 0%</span>
+  <span id="TotalSpotTop">Total Spot: 100</span>
+  </div>
+  <button class="book-ticket" id="buyTicketBtnTop">Buy ₹ 100 💳</button>
+  </div>
+  
+  <div class="user-ticket" id="userTicketContainer">
+  <div class="ticket-shell" id="ticketShell">
+  <div id="ticketSerial" class="ticket-serial">#000</div>
+  <div id="ticket" class="ticket"></div>
+  </div>
+  </div>
+  
+  <div class="claimed-box" id="claimBox">
+  <h3>Claim Your Prize 🎁</h3>
+  <div class="claim-buttons">
+  <button class="claim-button" onclick="claimPrize('Early Five')">    Early Five ₹500</button>
+  <button class="claim-button" onclick="claimPrize('Top Line')">Top Line ₹500</button>
+  <button class="claim-button" onclick="claimPrize('Middle Line')">Middle Line ₹500</button>
+  <button class="claim-button" onclick="claimPrize('Bottom Line')">Bottom Line ₹500</button>
+  <button class="claim-button" onclick="claimPrize('Ticket Corner')">Ticket Corner ₹500</button>
+  <button class="claim-button" onclick="claimPrize('Full House')">Full House ₹3000</button>
+  <button class="claim-button" onclick="claimPrize('2nd Full House')">2nd Full House ₹1000</button>
+  </div>
+  </div>
+  
+  <div class="board" id="board"></div>
+  <div class="history-box" id="historyBox">
+  <h3>Drawn Numbers History</h3>
+  <div id="history">None</div>
+  </div>
+  
+  <div class="claimed-box" id="claimedPrizesBox">
+  <h3>Claimed Prizes</h3>
+  <div id="claimsList">No claims yet...</div>
+  </div>
+  
+  <div class="winners-box" id="winnersBox">
+  <h3>Top Winners 🏆</h3>
+  <div id="winnerList">Loading winners...</div>
+  </div>
+  
+  <div class="next-game-box" id="nextGameBoxBottom">
+  <h3>Next Game Starts In ⏳</h3>
+  <div class="next-game-info">
+  <span id="nextCountdownBottom">00:00</span>
+  <span id="ticketsLeftBottom">Tickets Left: 0</span>
+  <span id="prizePercentageBottom">Prize %: 0%</span>
+  <span id="TotalSpotBottum">Total Spots : 100</span>
+  </div>
+  <button class="book-ticket" id="buyTicketBtnBottom">Buy ₹ 100 💳</button>
+  </div>
+  
+  <div class="play-friends-box" id="playFriendsBox">
+  <h3>Play With Friends 🎮 <span class="pill" id="roomStatusPill">No Room</span></h3>
+  <div class="friends-info">
+  <span id="friendsPrizePercentage">Prize %: 0</span>
+  </div>
+  <div class="row" style="margin-top:8px;">
+  <button class="book-ticket" id="createRoomBtn">Create Room</button>
+  <input type="text" id="joinRoomIdInput" placeholder="Enter Room ID" />
+  <button class="join-game-button" id="joinRoomBtn">Join Room</button>
+  </div>
+  <div id="roomInfo" style="margin-top:10px;color:#fff;"></div>
+  <div class="row" style="margin-top:10px;">
+  <button class="book-ticket" id="roomBuyTicketBtn" style="display:none;">Buy Ticket ₹ 100</button>
+  <button class="join-game-button" id="startRoomGameBtn" style="display:none;" disabled>Start Game</button>
+  </div>
+  <div id="playersList" class="muted" style="margin-top:10px;"></div>
+  </div>
+  
+  <div class="claimed-box" id="watchLiveBox" style="max-width:600px;margin:10px auto;padding:12px;border-radius:12px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1); background: #222;">
+  <h3 style="margin-bottom:8px;">🎥 Watch Live</h3>
+  <div style="text-align:center;">
+  <button id="watchLiveBtn" style="padding:10px 20px; font-size:1
