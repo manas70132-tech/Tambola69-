@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Tambola 69 - User</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111"/>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(() => console.log('Service Worker Registered'))
+    .catch(error => console.log('Service Worker registration failed:', error));
+}
+</script>
+<style>
+  /* ===== BASIC THEME (kept same as your part1) ===== */
+  body { font-family: Arial, sans-serif; background:#f0f2f5; margin:0; color:#222; text-align:center; }
+  header { padding:20px; font-size:3em; font-weight:900; color:#ff5722; text-shadow:2px 2px 3px #000; }
+  h2 { font-size:2em; color:#2196f3; margin:10px 0; text-shadow:1px 1px 2px #555; }
+  .live-number{font-size:32px; color:green; font-weight:800; margin:10px;}
+  .viewer-count{font-size:18px; margin:5px;}
+  .prize-box{max-width:680px;margin:10px auto;padding:15px;border-radius:12px;background:linear-gradient(135deg,#ff3cac,#784ba0,#2b86c5,#43e97b);color:#fff;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.3);text-align:left;}
+  .prize-box span{display:block;margin:4px 0;font-size:16px;}
+  .user-ticket{max-width:680px;margin:10px auto;display:none;}
+  .ticket-shell{border:3px solid #111;border-radius:12px;display:inline-block;padding:10px;position:relative;background:#fff;}
+  .ticket-serial{position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:#fff;padding:4px 8px;border-radius:999px;border:1px solid #111;font-weight:800;}
+  .ticket{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;}
+  .ticket-cell{padding:10px;border-radius:6px;font-weight:700;cursor:pointer;user-select:none;border:1px solid #333;position:relative;transition:0.2s;background:#fff;}
+  .ticket-cell.empty{background:transparent;border-style:dashed;cursor:default;color:transparent;}
+  .ticket-cell.ticked::after{content:"✓";position:absolute;top:2px;right:2px;background:green;color:#fff;padding:1px 3px;border-radius:50%;font-weight:900;font-size:10px;pointer-events:none;box-shadow:0 0 2px rgba(0,0,0,0.4);}
+  .ticket-cell.buggy{box-shadow:inset 0 0 0 3px rgba(255,0,0,0.12); background:linear-gradient(90deg, rgba(255,200,200,0.4), rgba(255,230,230,0.2));}
+  .claim-buttons{margin:10px;}
+  .claim-button{background:green;color:#fff;padding:10px 12px;border:none;border-radius:6px;cursor:pointer;margin:4px;font-weight:700;}
+  .claimed-box, .winners-box, .next-game-box, .play-friends-box, .history-box{max-width:500px;margin:8px auto;padding:12px;border-radius:12px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+  .claimed-line{color:red;font-weight:700;}
+  .book-ticket, .join-game-button{background:#ff6600;color:#fff;padding:10px 20px;border:none;border-radius:8px;margin:10px;cursor:pointer;font-weight:700;}
+  .book-ticket:hover, .join-game-button:hover{background:#e55b00;}
+  .next-game-box h3, .play-friends-box h3, .claimed-box h3, .winners-box h3, .history-box h3{margin-bottom:8px;}
+  .next-game-info, .friends-info{display:flex;justify-content:space-around;font-weight:700;flex-wrap:wrap;gap:8px;}
+  .board{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;max-width:600px;margin:10px auto;}
+  .board-cell{padding:8px;border-radius:6px;font-weight:700;background:#ddd;transition:0.3s;}
+  .board-cell.black{background:#000;color:#fff;}
+  .board-cell.highlight{background:orange !important;}
+  .menu{position:fixed;top:12px;right:12px;z-index:9999;}
+  .hamburger{width:42px;height:34px;border-radius:10px;border:2px solid #111;background:#fff;display:flex;flex-direction:column;justify-content:space-around;padding:6px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+  .hamburger span{height:3px;border-radius:2px;background:#111;}
+  .menu-panel{position:fixed;top:56px;right:12px;width:320px;background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;box-shadow:0 8px 16px rgba(0,0,0,0.15);display:none;text-align:left;}
+  .menu-panel.show{display:block;}
+  .menu-panel h4{margin:4px 0 8px;font-size:18px;}
+  .menu-row{margin:8px 0;padding:8px;border:1px dashed #ccc;border-radius:10px;}
+  .menu-row strong{font-size:16px;}
+  .menu-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .menu-btn{background:#111;color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700;}
+  .menu-btn.secondary{background:#444;}
+  .menu-note{font-size:12px;color:#555;margin-top:6px;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#fff;color:#000;font-weight:700;font-size:12px;margin-left:6px;}
+  .muted{opacity:0.85;font-weight:600;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center;}
+  input[type="text"], input[type="tel"], input[type="email"], input[type="number"]{ padding:8px 10px;border:1px solid #ccc;border-radius:8px;min-width:180px;}
+  .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; z-index:10000;}
+  .modal{background:#fff; width:92%; max-width:420px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.3); padding:16px; text-align:left;}
+  .modal h3{margin:0 0 8px;}
+  .modal label{font-size:14px;font-weight:700;display:block;margin-top:8px;}
+  .modal input{width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;margin-top:6px;}
+  .modal .row{display:flex;gap:8px;margin-top:10px;}
+  .modal .btn{background:#ff6600;color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:700;}
+  .modal .btn.secondary{background:#555;}
+  .modal .note{font-size:12px;color:#666;margin-top:6px;}
+  .waiting-wrapper{max-width:720px;margin:18px auto;position:relative;}
+  .waiting-box{
+    background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.65));
+    border-radius:16px;
+    padding:18px 18px 36px 18px;
+    box-shadow: 0 12px 30px rgba(20,30,60,0.12);
+    border: 1px solid rgba(255,255,255,0.5);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    text-align:center;
+    position:relative;
+  }
+  .waiting-title{font-size:20px;font-weight:900;color:#222;margin:0;}
+  .waiting-desc{margin-top:6px;color:#444;font-weight:700;}
+  .waiting-latest{margin-top:12px;font-size:28px;font-weight:900;color:#1b5e20;}
+  .waiting-live-pill{
+    position:absolute;
+    left:14px;
+    bottom:12px;
+    background:linear-gradient(90deg,#0d47a1,#1976d2);
+    color:#fff;
+    padding:8px 12px;
+    border-radius:10px;
+    font-weight:900;
+    box-shadow:0 6px 18px rgba(25,118,210,0.18);
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .waiting-live-pill .dot{width:10px;height:10px;border-radius:50%;background:#00e676;box-shadow:0 0 6px rgba(0,230,118,0.6)}
+  @media(max-width:700px){
+    .waiting-wrapper{padding:0 12px;}
+    .waiting-latest{font-size:20px;}
+  }
+  .winner-x { color:#ffeb3b; font-weight:900; margin-right:6px; }
+  .winner-row { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; }
+
+  .horiz-prizes {
+    max-width: 680px;
+    margin: 10px auto;
+    padding: 15px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1b5e20, #388e3c, #4caf50);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .horiz-prizes h3 {
+    margin: 0 0 10px;
+  }
+  .prize-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .prize-item {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .prize-item .prize-name {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .prize-item .prize-amount {
+    font-size: 16px;
+    font-weight: 900;
+    color: #ffeb3b;
+  }
+
+  /* Tambola Board */
+  .tambola-board-container {
+      max-width: 500px;
+      margin: 10px auto;
+      padding: 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #1b5e20, #388e3c, #4caf50);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .tambola-board-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+  }
+  .tambola-board-cell {
+      padding: 12px 0;
+      font-weight: 900;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border-radius: 8px;
+      transition: background-color 0.3s, color 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  .tambola-board-cell.drawn {
+      background: #000;
+      color: #fff;
+      border-color: #000;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+  }
+</style>
+</head>
+<body>
+<!-- Music action button -->
+<button id="musicBtn" style="position:fixed; top:12px; left:12px; font-size:22px; z-index:10000; background:#fff; color:#111; border:2px solid #111; border-radius:10px; padding:6px 10px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.15);">🎵</button>
+<audio id="liveMusic" autoplay loop></audio>
+
+<header>Tambola 69</header>
+<h2>Step Into The Excitement!</h2>
+<h4>“We hope luck is always on your side!” 🎉</h4>
+
+<!-- Menu -->
+<div class="menu">
+  <div class="hamburger" id="menuToggle" aria-label="Options"><span></span><span></span><span></span></div>
+</div>
+<div class="menu-panel" id="menuPanel">
+  <h4>Options</h4>
+  <div class="menu-row">
+    <strong>🏆 Your Winnings: ₹<span id="myWinnings">0</span></strong>
+    <div class="menu-note">If you haven't won yet, this shows ₹0.</div>
+  </div>
+  <div class="menu-row">
+    <strong>💸 Cash Withdrawal</strong>
+    <div class="menu-actions">
+      <button class="menu-btn" id="withdrawBtn">Withdraw Now</button>
+      <button class="menu-btn secondary" id="sendUPIBtn">Send UPI/Phone</button>
+    </div>
+    <div class="menu-note">Enter amount and your UPI or phone. We’ll receive your request instantly.</div>
+  </div>
+  <div class="menu-row">
+    <strong>📣 Share App</strong>
+    <div class="menu-actions">
+      <button class="menu-btn" id="shareNative">Share</button>
+      <button class="menu-btn secondary" id="shareWhatsApp">WhatsApp</button>
+      <button class="menu-btn secondary" id="shareFacebook">Facebook</button>
+      <button class="menu-btn secondary" id="shareInstagram">Instagram</button>
+    </div>
+    <div class="menu-note">Invite friends via your favourite app.</div>
+  </div>
+  <div class="menu-row">
+    <strong>👤 User Profile</strong>
+    <div class="menu-actions">
+      <button class="menu-btn" id="viewProfileBtn">View Profile</button>
+    </div>
+    <div class="menu-note">See your User ID, Name, Contact & Email.</div>
+  </div>
+  <div class="menu-row">
+    <strong>⚙️ Auto Options</strong>
+    <div class="menu-actions">
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="autoTickToggle" /> Auto-Tick
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="autoClaimToggle" /> Auto-Claim
+      </label>
+    </div>
+    <div class="menu-note">Auto-Tick marks numbers on your ticket as they are drawn. Auto-Claim will submit valid claims automatically.</div>
+  </div>
+  <div class="menu-row">
+    <strong>📜 My History</strong>
+    <div class="menu-actions">
+      <button class="menu-btn" id="viewHistoryBtn">Game & Payment</button>
+    </div>
+    <div class="menu-note">View your past game and withdrawal history.</div>
+  </div>
+</div>
+
+<!-- Top Prize banner -->
+<div class="prize-box">
+  <h2> Mega contest </h2>
+  <span>Prize list :-</span>
+  <span>* Early Five Prize: ₹ 500</span>
+  <span>* Ticket Corner Prize: ₹ 500</span>
+  <span>* Each Line Prize: ₹ 500</span>
+  <span>* Full House Prize: ₹ 3000</span>
+  <span># 2nd Full House Prize ₹ 1000” 🎉</span>
+  <span># Try Your Luck !</span>
+</div>
+
+<!-- Watch Live -->
+<div class="claimed-box" id="watchLiveBox" style="max-width:600px;margin:10px auto;padding:12px;border-radius:12px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1); background: #222;">
+  <h3 style="margin-bottom:8px;">🎥 Watch Live</h3>
+  <div style="text-align:center;">
+    <button id="watchLiveBtn" style="padding:10px 20px; font-size:16px; background:#ff4444; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+      ▶️ Watch Live
+    </button>
+    <div id="liveVideoBox" style="margin-top:15px; display:none;">
+      <iframe id="liveFrame" width="100%" height="300" src="" title="Tambola 69 Live" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+  </div>
+  <div style="margin-top:8px; font-size:12px; opacity:0.9;">Tip: Tap "Watch Live" to start the stream inside the app.</div>
+</div>
+
+<!-- Waiting / Live area -->
+<div class="waiting-wrapper">
+  <div class="waiting-box" id="waitingBox">
+    <div class="waiting-title" id="waitingTitle">Waiting for Draw...</div>
+    <div class="waiting-desc" id="waitingDesc">No active room • Global draw idle</div>
+    <div class="waiting-latest" id="latestNumber">—</div>
+    <div class="waiting-live-pill" id="waitingLive">
+      <div class="dot" id="liveDot"></div>
+      <div id="waitingLiveText">Live Users: 0</div>
+    </div>
+  </div>
+</div>
+
+<!-- Next Game Top -->
+<div class="next-game-box" id="nextGameBoxTop">
+  <h3>Game Starts In ⏳</h3>
+  <div class="next-game-info">
+    <div><span id="nextCountdownTop">00:00</span><br>Timer</div>
+    <div><span id="ticketsLeftTop">0</span><br>Tickets Left</div>
+    <div><span id="prizePercentageTop">0%</span><br>Prize %</div>
+    <div><span id="TotalSpotTop">100</span><br>Total Spot</div>
+  </div>
+  <button class="book-ticket" id="buyTicketBtnTop">Buy ₹ 100 💳</button>
+</div>
+
+<!-- User Ticket -->
+<div class="user-ticket" id="userTicketContainer">
+  <div class="ticket-shell" id="ticketShell">
+    <div id="ticketSerial" class="ticket-serial">#000</div>
+    <div id="ticket" class="ticket"></div>
+  </div>
+</div>
+
+<!-- Claim Buttons -->
+<div class="claimed-box" id="claimBox">
+  <h3>Claim Your Prize 🎁</h3>
+  <div class="claim-buttons">
+    <button class="claim-button" onclick="claimPrize('Early Five')">Early Five ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Top Line')">Top Line ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Middle Line')">Middle Line ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Bottom Line')">Bottom Line ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Ticket Corner')">Ticket Corner ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Full House')">Full House ₹3000</button>
+    <button class="claim-button" onclick="claimPrize('2nd Full House')">2nd Full House ₹1000</button>
+  </div>
+</div>
+
+<!-- Tambola Board -->
+<div class="tambola-board-container">
+  <h3>Tambola Board</h3>
+  <div class="tambola-board-grid" id="tambola-board"></div>
+</div>
+
+<!-- Draw History -->
+<div class="history-box" id="historyBox">
+  <h3>Drawn Numbers History</h3>
+  <div id="history">None</div>
+</div>
+
+<!-- Next Game Bottom -->
+<div class="next-game-box" id="nextGameBoxBottom">
+  <h3>Next Game Starts In ⏳</h3>
+  <div class="next-game-info">
+    <div><span id="nextCountdownBottom">00:00</span><br>Timer</div>
+    <div><span id="ticketsLeftBottom">0</span><br>Tickets Left</div>
+    <div><span id="prizePercentageBottom">0%</span><br>Prize %</div>
+    <div><span id="TotalSpotBottum">100</span><br>Total Spot</div>
+  </div>
+  <button class="book-ticket" id="buyTicketBtnBottom">Buy ₹ 100 💳</button>
+</div>
+
+<!-- Play with friends -->
+<div class="play-friends-box" id="playFriendsBox">
+  <h3>Play With Friends 🎮 <span class="pill" id="roomStatusPill">No Room</span></h3>
+  <div class="friends-info">
+    <span id="friendsPrizePercentage">Prize %: 0</span>
+  </div>
+  <div class="row" style="margin-top:8px;">
+    <button class="book-ticket" id="createRoomBtn">Create Room</button>
+    <button class="join-game-button" id="joinRoomBtn">Join Room</button>
+    <input type="text" id="joinRoomIdInput" placeholder="Enter Room ID" />
+  </div>
+  <div id="roomInfo" style="margin-top:10px;color:#fff;"></div>
+  <div class="row" style="margin-top:10px;">
+    <button class="book-ticket" id="roomBuyTicketBtn" style="display:none;">Buy Ticket ₹ 100</button>
+    <button class="join-game-button" id="startRoomGameBtn" style="display:none;" disabled>Start Game</button>
+  </div>
+  <div id="playersList" class="muted" style="margin-top:10px;"></div>
+</div>
+
+<!-- Quick Prizes -->
+<div class="horiz-prizes">
+  <h3>Quick Prize Info</h3>
+  <div class="prize-grid" id="quickPrizeGrid"></div>
+  <button class="view-all-button" id="viewAllPrizesBtn">See all prizes</button>
+</div>
+
+<!-- Top winners -->
+<div class="winners-box" id="winnersBox">
+  <h3>Top Winners 🏆</h3>
+  <div id="winnerList">Loading winners...</div>
+</div>
+
+<!-- User booked tickets list -->
+<div class="game-details-box" id="userGamesContainer">
+  <h3>My Booked Tickets</h3>
+  <div id="userGamesList">No booked tickets yet.</div>
+</div>
+
+<!-- Withdraw modal -->
+<div class="modal-backdrop" id="withdrawModal" style="display:none;">
+  <div class="modal">
+    <h3>Request Withdrawal</h3>
+    <label>Amount (₹)</label>
+    <input id="withdrawAmount" type="number" placeholder="Enter amount" />
+    <label>UPI ID or Phone</label>
+    <input id="withdrawDest" type="text" placeholder="example@upi or +91XXXXXXXXXX" />
+    <div class="row" style="justify-content:flex-end;">
+      <button class="btn secondary" id="cancelWithdrawBtn">Cancel</button>
+      <button class="btn" id="submitWithdrawBtn">Submit Request</button>
+    </div>
+    <div class="note">Withdrawal requests will be recorded and admin will be notified (email/SMS) via your server/cloud-function.</div>
+  </div>
+</div>
+
+<!-- Login / OTP Modal -->
+<div class="modal-backdrop" id="loginModal">
+  <div class="modal">
+    <h3>Login with Phone OTP</h3>
+    <label>Phone Number (include +91)</label>
+    <input id="phoneInput" type="tel" placeholder="+91XXXXXXXXXX" />
+    <div id="recaptcha-container" style="margin-top:10px;"></div>
+    <div class="row">
+      <button class="btn" id="sendOtpBtn">Send OTP</button>
+      <button class="btn secondary" id="closeLoginBtn" type="button">Close</button>
+    </div>
+    <label>Enter OTP</label>
+    <input id="otpInput" type="text" placeholder="6-digit code" />
+    <button class="btn" id="verifyOtpBtn" style="margin-top:8px;">Verify OTP</button>
+    <div id="detailsStep" style="display:none; margin-top:10px;">
+      <h3 style="margin-top:12px;">Your Details</h3>
+      <label>Name</label>
+      <input id="nameInput" type="text" placeholder="Your name" />
+      <label>Email</label>
+      <input id="emailInput" type="email" placeholder="you@example.com" />
+      <button class="btn" id="saveDetailsBtn" style="margin-top:8px;">Save</button>
+    </div>
+    <div class="note">Note: OTP works on HTTPS or localhost.</div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+/* ===========================
+   FIREBASE CONFIG - paste yours
+   =========================== */
+var firebaseConfig = {apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+  authDomain: "tambola69-9dc8f.firebaseapp.com",
+  projectId: "tambola69-9dc8f",
+  storageBucket: "tambola69-9dc8f.firebasestorage.app",
+  messagingSenderId: "413290158586",
+  appId: "1:413290158586:web:70fff2d94b29206487ec43",
+  measurementId: "G-6WJNDX5DGB"
+  
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ===========================
+   DOM Refs (from parts)
+   =========================== */
+const boardEl = document.getElementById('board'); // not used much but kept
+const tambolaBoardEl = document.getElementById('tambola-board');
+const ticketEl = document.getElementById('ticket');
+const ticketSerialEl = document.getElementById('ticketSerial');
+const historyEl = document.getElementById('history');
+const winnerListEl = document.getElementById('winnerList');
+const userTicketContainer = document.getElementById('userTicketContainer');
+const ticketShellEl = document.getElementById('ticketShell');
+
+const waitingTitle = document.getElementById('waitingTitle');
+const waitingDesc = document.getElementById('waitingDesc');
+const latestNumber = document.getElementById('latestNumber');
+const waitingLiveText = document.getElementById('waitingLiveText');
+const liveDot = document.getElementById('liveDot');
+
+const buyTicketBtnTop = document.getElementById('buyTicketBtnTop');
+const buyTicketBtnBottom = document.getElementById('buyTicketBtnBottom');
+const menuToggle = document.getElementById('menuToggle');
+const menuPanel = document.getElementById('menuPanel');
+const viewProfileBtn = document.getElementById('viewProfileBtn');
+const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+
+const withdrawBtn = document.getElementById('withdrawBtn');
+const withdrawModal = document.getElementById('withdrawModal');
+const cancelWithdrawBtn = document.getElementById('cancelWithdrawBtn');
+const submitWithdrawBtn = document.getElementById('submitWithdrawBtn');
+const withdrawAmount = document.getElementById('withdrawAmount');
+const withdrawDest = document.getElementById('withdrawDest');
+
+const createRoomBtn = document.getElementById('createRoomBtn');
+const joinRoomBtn = document.getElementById('joinRoomBtn');
+const joinRoomIdInput = document.getElementById('joinRoomIdInput');
+const roomBuyTicketBtn = document.getElementById('roomBuyTicketBtn');
+const startRoomGameBtn = document.getElementById('startRoomGameBtn');
+const roomInfoEl = document.getElementById('roomInfo');
+const playersListEl = document.getElementById('playersList');
+const roomStatusPill = document.getElementById('roomStatusPill');
+
+const watchLiveBtn = document.getElementById('watchLiveBtn');
+const liveVideoBox = document.getElementById('liveVideoBox');
+const liveFrame = document.getElementById('liveFrame');
+
+const autoTickToggle = document.getElementById('autoTickToggle');
+const autoClaimToggle = document.getElementById('autoClaimToggle');
+
+const musicRef = db.ref("music");
+const player = document.getElementById("liveMusic");
+const musicBtn = document.getElementById("musicBtn");
+const currentGameRef = db.ref('games/current'); // matches admin
+const nextGameRef = db.ref('games/next');
+const videoRef = db.ref('video');
+const userGamesRef = db.ref('userTickets'); // per your admin structure
+const claimsRef = db.ref('claims');
+const winnersRef = db.ref('winners');
+
+/* ================= Decorative colors for boxes (from your part2) ================= */
+const boxes = [
+  document.getElementById('claimBox'), document.getElementById('historyBox'), document.getElementById('winnersBox'),
+  document.getElementById('nextGameBoxTop'), document.getElementById('nextGameBoxBottom'), document.getElementById('playFriendsBox')
+];
+boxes.forEach(el=>{
+  if(!el) return;
+  const h=Math.floor(Math.random()*360);
+  const s=60+Math.random()*20;
+  const l=45+Math.random()*15;
+  el.style.background=`hsl(${h},${s}%,${l}%)`;
+});
+
+/* ================= Identity / Local keys ================= */
+let userId = null;
+let myName = null;
+let myContact = null;
+let myEmail = null;
+let currentTicketSerial = null;
+let currentTicketGameId = null;
+let currentGrid = null;
+
+const LS_UID='tambola_user_v2', LS_NAME='tambola_name_v2', LS_CONTACT='tambola_contact_v2', LS_EMAIL='tambola_email_v2';
+const LS_AUTOTICK='tambola_auto_tick_v2', LS_AUTOCLAIM='tambola_auto_claim_v2';
+const LS_TICKET = 'tambola_ticket_v2_';
+const LS_TICKET_SERIAL = 'tambola_ticket_serial_v2_';
+const LS_TICKET_GAME = 'tambola_ticket_game_v2_';
+
+/* ================= Helpers: local profile ================= */
+function setLocalProfile(id,name,phone,email){
+  if(id) localStorage.setItem(LS_UID,id);
+  if(name) localStorage.setItem(LS_NAME,name);
+  if(phone) localStorage.setItem(LS_CONTACT,phone);
+  if(email) localStorage.setItem(LS_EMAIL,email);
+}
+function loadProfileFromLocal(){
+  userId = localStorage.getItem(LS_UID);
+  myName = localStorage.getItem(LS_NAME);
+  myContact = localStorage.getItem(LS_CONTACT);
+  myEmail = localStorage.getItem(LS_EMAIL);
+}
+function ensureGuest(){
+  if(!localStorage.getItem(LS_UID)){
+    const gen='u_'+Math.random().toString(36).slice(2,9);
+    setLocalProfile(gen,'Guest',null,null);
+  }
+  loadProfileFromLocal();
+}
+autoTickToggle.checked = localStorage.getItem(LS_AUTOTICK) === '1';
+autoClaimToggle.checked = localStorage.getItem(LS_AUTOCLAIM) === '1';
+autoTickToggle.addEventListener('change', ()=> localStorage.setItem(LS_AUTOTICK, autoTickToggle.checked ? '1':'0'));
+autoClaimToggle.addEventListener('change', ()=> localStorage.setItem(LS_AUTOCLAIM, autoClaimToggle.checked ? '1':'0'));
+
+/* ================= OTP Modal (basic) ================= */
+const loginModal = document.getElementById('loginModal');
+const sendOtpBtn = document.getElementById('sendOtpBtn');
+const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+const closeLoginBtn = document.getElementById('closeLoginBtn');
+const detailsStep = document.getElementById('detailsStep');
+const nameInput = document.getElementById('nameInput');
+const emailInput = document.getElementById('emailInput');
+const phoneInput = document.getElementById('phoneInput');
+const otpInput = document.getElementById('otpInput');
+let recaptchaVerifier=null, confirmationResult=null;
+function showLoginModal(){ loginModal.style.display='flex'; ensureRecaptcha(); }
+function hideLoginModal(){ loginModal.style.display='none'; }
+closeLoginBtn.addEventListener('click', hideLoginModal);
+
+function applyAuthUser(u){
+  if(!u) return;
+  userId = u.uid;
+  myContact = u.phoneNumber || myContact;
+  setLocalProfile(userId, myName, myContact, myEmail);
+  loadUserTicket();
+}
+
+/* ================= BOARD initial render (tambola board both visual grids) ================= */
+for(let i=1;i<=90;i++){
+  const cell=document.createElement('div');
+  cell.className='tambola-board-cell';
+  cell.id='tb_'+i;
+  cell.textContent=i;
+  tambolaBoardEl.appendChild(cell);
+}
+for(let i=1;i<=90;i++){
+  const cell=document.createElement('div');
+  cell.className='board-cell';
+  cell.id='b_'+i;
+  cell.textContent=i;
+  // boardEl may exist in some templates; keep safe
+  if(boardEl) boardEl.appendChild(cell);
+}
+
+/* ================= Ticket Generator (9 columns x 3 rows classic algorithm) ================= */
+function generateTicketMatrix(){
+  const cols=[], chosen=[];
+  for(let c=0;c<9;c++){
+    const min=c===0?1:c*10;
+    const max=c===8?90:c*10+9;
+    const pool=[]; for(let n=min;n<=max;n++) pool.push(n);
+    cols.push(pool);
+  }
+  while(chosen.length<15){
+    const c=Math.floor(Math.random()*9);
+    if(chosen.filter(x=>x.col===c).length>=3) continue;
+    const pool=cols[c];
+    const val=pool[Math.floor(Math.random()*pool.length)];
+    if(!chosen.some(x=>x.num===val)) chosen.push({col:c,num:val});
+  }
+  const byCol=Array.from({length:9},()=>[]);
+  chosen.forEach(x=>byCol[x.col].push(x.num));
+  byCol.forEach(a=>a.sort((a,b)=>a-b));
+  const grid=Array.from({length:3},()=>Array(9).fill(null));
+  const rowCounts=[0,0,0];
+  for(let c=0;c<9;c++){
+    if(byCol[c].length===3){ for(let r=0;r<3;r++){ grid[r][c]=byCol[c][r]; rowCounts[r]++; } }
+  }
+  for(let c=0;c<9;c++){
+    if(byCol[c].length===2){
+      const rows=[0,1,2].sort((a,b)=>rowCounts[a]-rowCounts[b]).slice(0,2);
+      grid[rows[0]][c]=byCol[c][0]; grid[rows[1]][c]=byCol[c][1];
+      rowCounts[rows[0]]++; rowCounts[rows[1]]++;
+    }
+  }
+  for(let c=0;c<9;c++){
+    if(byCol[c].length===1){
+      const r=[0,1,2].sort((a,b)=>rowCounts[a]-rowCounts[b])[0];
+      grid[r][c]=byCol[c][0]; rowCounts[r]++;
+    }
+  }
+  return grid;
+}
+let currentGrid=null;
+function renderTicket(grid, serialText){
+  const g = grid || currentGrid;
+  if(!g) return;
+  userTicketContainer.style.display='block';
+  ticketEl.innerHTML='';
+  if(serialText) ticketSerialEl.textContent = serialText;
+  const ticks=JSON.parse(localStorage.getItem('ticks_'+(userId||'guest'))||'[]');
+  for(let r=0;r<3;r++){
+    for(let c=0;c<9;c++){
+      const val=g[r][c];
+      const cell=document.createElement('div');
+      if(!val){cell.className='ticket-cell empty'; cell.innerHTML='&nbsp;';}
+      else{
+        cell.className='ticket-cell';
+        cell.textContent=val;
+        if(ticks.includes(val)) cell.classList.add('ticked');
+      }
+      cell.addEventListener('click',()=>{
+        if(!val) return;
+        const ticksNow = JSON.parse(localStorage.getItem('ticks_'+(userId||'guest'))||'[]');
+        if(cell.classList.contains('ticked')){
+          cell.classList.remove('ticked');
+          const idx=ticksNow.indexOf(val);
+          if(idx>-1) ticksNow.splice(idx,1);
+        } else {
+          cell.classList.add('ticked'); ticksNow.push(val);
+        }
+        localStorage.setItem('ticks_'+(userId||'guest'),JSON.stringify(ticksNow));
+      });
+      ticketEl.appendChild(cell);
+    }
+  }
+}
+function markTicketBuggy(reason){
+  const cells = ticketEl.querySelectorAll('.ticket-cell.ticked');
+  cells.forEach(c=> c.classList.add('buggy'));
+  const uid = localStorage.getItem(LS_UID) || userId || ('guest_'+Math.random().toString(36).slice(2,6));
+  db.ref('buggyClaims').push({ userId:uid, name: localStorage.getItem(LS_NAME)||myName||'Guest', time: firebase.database.ServerValue.TIMESTAMP, reason });
+  setTimeout(()=>{ cells.forEach(c=> c.classList.remove('buggy')); },6000);
+}
+function ticketNumbersFlat(grid){
+  return grid.flat().filter(Boolean);
+}
+
+/* ================ Save / Load ticket to DB for the user ================ */
+function saveTicketToDB(ticketData, gameId) {
+    if (!userId && !localStorage.getItem(LS_UID)) {
+        alert("Please log in to book a ticket.");
+        return;
+    }
+    const uid = localStorage.getItem(LS_UID) || userId;
+    const userTicketRef = userGamesRef.child(uid).child(gameId);
+    userTicketRef.set(ticketData).then(() => {
+        console.log("Ticket saved to DB successfully.");
+        localStorage.setItem(LS_TICKET + gameId, JSON.stringify(ticketData));
+    }).catch(error => {
+        console.error("Error saving ticket to DB:", error);
+        alert("Failed to save ticket. Please try again.");
+    });
+}
+function loadUserTicket() {
+    const uid = localStorage.getItem(LS_UID) || userId;
+    if (!uid) return;
+    userGamesRef.child(uid).once('value', snapshot => {
+        const allTickets = snapshot.val();
+        if (allTickets) {
+            renderUserGamesList(allTickets);
+            const firstTicket = Object.values(allTickets)[0];
+            if (firstTicket) {
+                currentGrid = firstTicket.ticket;
+                currentTicketSerial = firstTicket.serial;
+                currentTicketGameId = firstTicket.gameId;
+                renderTicket(currentGrid, `#${currentTicketSerial}`);
+            }
+        } else {
+            document.getElementById('userGamesList').innerHTML = 'No booked tickets yet.';
+        }
+    });
+}
+function renderUserGamesList(tickets) {
+    const listEl = document.getElementById('userGamesList');
+    listEl.innerHTML = '';
+    Object.keys(tickets).forEach(gameId => {
+        const ticketData = tickets[gameId];
+        const div = document.createElement('div');
+        div.className = 'game-info-item';
+        div.innerHTML = `
+            <div style="font-weight: bold;">Game: ${ticketData.gameName}</div>
+            <div>Ticket ID: ${ticketData.serial}</div>
+            <div>Status: ${ticketData.status}</div>
+            <div><a href="#" onclick="showSpecificTicket('${gameId}')">View Ticket</a></div>
+        `;
+        listEl.appendChild(div);
+    });
+}
+function showSpecificTicket(gameId) {
+    const uid = localStorage.getItem(LS_UID) || userId;
+    if(!uid) return;
+    userGamesRef.child(uid).child(gameId).once('value', snapshot => {
+        const ticketData = snapshot.val();
+        if (ticketData) {
+            currentGrid = ticketData.ticket;
+            currentTicketSerial = ticketData.serial;
+            currentTicketGameId = gameId;
+            renderTicket(currentGrid, `#${currentTicketSerial}`);
+        }
+    });
+}
+
+/* ================= Global presence, variables, rooms ================= */
+const presenceRef=db.ref('presence');
+let myPresence=null;
+let activeRoom = null;
+let isHost=false;
+let drawTimer=null;
+const DRAW_INTERVAL_MS = 4000;
+const ROOM_STATUS = { WAIT:'waiting', START:'started', END:'ended' };
+
+/* ================ UI update functions ================ */
+function highlightBoard(n, hist){
+  // update tambola-board-grid cells
+  document.querySelectorAll('.tambola-board-cell').forEach(cell => cell.classList.remove('drawn'));
+  hist.forEach(num => {
+    const hCell = document.getElementById('tb_'+num);
+    if(hCell) hCell.classList.add('drawn');
+  });
+  // Also highlight latest
+  const latestCell = document.getElementById('tb_' + n);
+  if (latestCell) latestCell.classList.add('drawn');
+}
+let countdownInterval;
+function updateCountdownDisplay(seconds, elementId) {
+  clearInterval(countdownInterval);
+  const countdownEl = document.getElementById(elementId);
+  let remaining = seconds;
+  countdownEl.textContent = `${remaining}`;
+  countdownInterval = setInterval(() => {
+    remaining--;
+    if (remaining >= 0) {
+      countdownEl.textContent = `${remaining}`;
+    } else {
+      clearInterval(countdownInterval);
+    }
+  }, 1000);
+}
+
+/* ================ LISTEN to currentGame (global) ================ */
+currentGameRef.on('value', s => {
+  if(activeRoom) return; // if in private room, show room not global
+  const data = s.val() || {};
+  const status = data.status || 'idle';
+  const liveNumber = data.liveNumber;
+  const historyArr = data.history || [];
+  const countdown = data.countdown;
+  const ticketsLeft = data.ticketsLeft || 0;
+  const prizePercentage = data.prizePercentage || 0;
+  const totalSpots = data.totalSpots || 100;
+
+  waitingTitle.textContent = `Game Status: ${status}`;
+  waitingDesc.textContent = status === 'started' ? 'Global public draw is live' : 'No active game';
+  latestNumber.textContent = liveNumber ? 'Number: ' + liveNumber : '—';
+  historyEl.textContent = historyArr.length ? historyArr.join(', ') : 'None';
+  highlightBoard(liveNumber, historyArr);
+  if(liveNumber) speakTambolaNumber(liveNumber);
+
+  if (typeof countdown === 'number') {
+    updateCountdownDisplay(countdown, 'nextCountdownTop');
+  } else {
+    document.getElementById('nextCountdownTop').textContent = '--';
+  }
+
+  document.getElementById('ticketsLeftTop').textContent = ticketsLeft;
+  document.getElementById('prizePercentageTop').textContent = `${prizePercentage}%`;
+  document.getElementById('TotalSpotTop').textContent = totalSpots;
+});
+
+/* ================ LISTEN to next game ================ */
+nextGameRef.on('value', s => {
+  const data = s.val() || {};
+  const countdown = data.countdown;
+  const ticketsLeft = data.ticketsLeft || 0;
+  const prizePercentage = data.prizePercentage || 0;
+  const totalSpots = data.totalSpots || 100;
+
+  if (typeof countdown === 'number') {
+    updateCountdownDisplay(countdown, 'nextCountdownBottom');
+  } else {
+    document.getElementById('nextCountdownBottom').textContent = '--';
+  }
+  document.getElementById('ticketsLeftBottom').textContent = ticketsLeft;
+  document.getElementById('prizePercentageBottom').textContent = `${prizePercentage}%`;
+  document.getElementById('TotalSpotBottum').textContent = totalSpots;
+});
+
+/* ================ Listen video / watch live ================ */
+videoRef.on('value', snap => {
+  const data = snap.val() || {};
+  const liveBtn = document.getElementById('watchLiveBtn');
+  if (data.url && liveBtn) {
+    liveBtn.onclick = function() {
+      liveFrame.src = data.url + (data.url.includes('?') ? '&autoplay=1' : '?autoplay=1') + '&rel=0';
+      liveVideoBox.style.display = 'block';
+      liveBtn.style.display = 'none';
+    };
+  }
+});
+
+/* ================= Claims & Winners listeners ================= */
+const userHistoryRef = db.ref('userHistory');
+const withdrawalHistoryRef = db.ref('withdrawalHistory');
+const notificationRef = db.ref('notifications');
+
+const PRIZE_AMOUNTS = {
+  'Early Five':500, 'Top Line':500, 'Middle Line':500, 'Bottom Line':500,
+  'Full House':3000, 'Ticket Corner':500, 'Ticket Corner Prize':500, 'Each Line':500, '2nd Full House':1000
+};
+
+function renderQuickPrizes() {
+    const prizes = [
+        { name: 'Early Five', amount: 500 },
+        { name: 'Full House', amount: 3000 },
+        { name: 'Each Line', amount: 500 },
+        { name: '2nd Full House', amount: 1000 }
+    ];
+    const gridEl = document.getElementById('quickPrizeGrid');
+    gridEl.innerHTML = prizes.map(p => `
+        <div class="prize-item">
+            <div class="prize-name">${p.name}</div>
+            <div class="prize-amount">₹${p.amount}</div>
+        </div>
+    `).join('');
+}
+renderQuickPrizes();
+
+document.getElementById('viewAllPrizesBtn').addEventListener('click', () => {
+    const allPrizes = `
+    * Early Five Prize: ₹500
+    * Ticket Corner Prize: ₹500
+    * Each Line Prize: ₹500
+    * Full House Prize: ₹3000
+    * 2nd Full House Prize: ₹1000
+    `;
+    alert(`All Prize List:\n\n${allPrizes}`);
+});
+
+winnersRef.on('value',s=>{
+  const data=s.val()||{};
+  const arr = Object.entries(data||{}).map(([k,w])=>{
+    const claimed = w.claimed?'<span class="winner-x">X</span>':'';
+    const uname = w.name || w.userName || 'Player';
+    return `<div class="winner-row">${claimed}<div>${uname} - ${w.prize||'Winner'}</div><div>₹${w.amount||0}</div></div>`;
+  });
+  winnerListEl.innerHTML = arr.length?arr.join(''):'No winners yet...';
+});
+
+/* ================= Wallet helpers ================= */
+async function ensureUserRecord(uid){
+  const userRef=db.ref('users/'+uid);
+  const snap=await userRef.once('value');
+  if(!snap.exists()){
+    await userRef.set({ name: localStorage.getItem(LS_NAME)||myName||'Guest', phone: localStorage.getItem(LS_CONTACT)||myContact||'', email: localStorage.getItem(LS_EMAIL) || myEmail || '', balance:0 });
+  }
+}
+async function getUserBalance(uid){
+  const snap=await db.ref('users/'+uid).once('value');
+  return (snap.val() && snap.val().balance) || 0;
+}
+async function setUserBalance(uid, newBal){
+  await db.ref('users/'+uid).update({ balance: newBal });
+  document.getElementById('myWinnings').textContent = newBal;
+}
+
+/* ================= Claim Prize (with validation + buggy handling) ================= */
+async function claimPrize(prizeName){
+  if(!currentGrid){alert("Buy a ticket first!"); return;}
+  const uid = localStorage.getItem(LS_UID) || userId || ('guest_'+Math.random().toString(36).slice(2,6));
+  const name = localStorage.getItem(LS_NAME) || myName || 'Guest';
+  const amount = PRIZE_AMOUNTS[prizeName] || 0;
+
+  // fetch history: if in room read rooms/{room}/draw/history else games/current/history
+  const historyArr = (activeRoom ? (await db.ref(`rooms/${activeRoom}/draw/history`).once('value')).val() : (await currentGameRef.child('history').once('value')).val()) || [];
+  const H = Array.isArray(historyArr) ? historyArr : Object.values(historyArr||{});
+  const tnums = ticketNumbersFlat(currentGrid);
+  const gameId = currentTicketGameId || (activeRoom ? activeRoom : 'global-current');
+
+  const validators = {
+    'Early Five': ()=>{
+      if(H.length < 5) return false;
+      const firstFive = H.slice(0,5).map(Number);
+      return firstFive.every(n => tnums.includes(n));
+    },
+    'Top Line': ()=> {
+      const row = currentGrid[0].filter(Boolean);
+      return row.every(n => H.includes(n));
+    },
+    'Middle Line': ()=> {
+      const row = currentGrid[1].filter(Boolean);
+      return row.every(n => H.includes(n));
+    },
+    'Bottom Line': ()=> {
+      const row = currentGrid[2].filter(Boolean);
+      return row.every(n => H.includes(n));
+    },
+    'Ticket Corner': ()=> {
+      const corners = [];
+      if(currentGrid[0][0]) corners.push(currentGrid[0][0]);
+      if(currentGrid[0][8]) corners.push(currentGrid[0][8]);
+      if(currentGrid[2][0]) corners.push(currentGrid[2][0]);
+      if(currentGrid[2][8]) corners.push(currentGrid[2][8]);
+      return corners.length===4 && corners.every(n => H.includes(n));
+    },
+    'Full House': ()=> {
+      return tnums.every(n=>H.includes(n));
+    },
+    '2nd Full House': ()=> {
+      return tnums.every(n=>H.includes(n));
+    }
+  };
+
+  const valid = validators[prizeName] ? validators[prizeName]() : false;
+  if(!valid){
+    markTicketBuggy(`Wrong claim: ${prizeName}`);
+    alert('Invalid claim — ticket marked buggy. Please review your numbers.');
+    await db.ref('claims').push({ userId: uid, userName: name, prize: prizeName, time: firebase.database.ServerValue.TIMESTAMP, valid:false, gameId });
+    return;
+  }
+  
+  const claimRef = claimsRef.push();
+  await claimRef.set({ userId: uid, userName: name, prize: prizeName, time: firebase.database.ServerValue.TIMESTAMP, valid:true, gameId });
+  const wref = winnersRef.push();
+  await wref.set({ userId: uid, name, prize: prizeName, amount, claimed: true, time: firebase.database.ServerValue.TIMESTAMP, gameId });
+  const userRef = db.ref('users/'+uid);
+  const snap = await userRef.once('value');
+  const existing = snap.val() || {};
+  const newBal = (existing.balance||0) + amount;
+  await userRef.update({ balance: newBal, name: name, phone: localStorage.getItem(LS_CONTACT)||myContact||'', email: localStorage.getItem(LS_EMAIL) || myEmail || '' });
+  document.getElementById('myWinnings').textContent = newBal;
+  alert(`Claim submitted for ${prizeName}. ₹${amount} added to your balance.`);
+
+  const userTicketRef = db.ref(`userTickets/${uid}/${currentTicketGameId}`);
+  userTicketRef.update({ status: 'claimed', claimedPrize: prizeName });
+
+  userHistoryRef.child(uid).push({
+      type: 'claim',
+      prize: prizeName,
+      amount,
+      gameId,
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  // Update claim button UI to show claimed
+  const prizeButtons = document.querySelectorAll('.claim-button');
+  prizeButtons.forEach(button => {
+    if (button.textContent.includes(prizeName)) {
+      button.innerHTML = `<span class="claimed-button-text">X</span> ${prizeName} ₹${amount}`;
+      button.disabled = true;
+      button.style.backgroundColor = 'gray';
+    }
+  });
+}
+
+async function tryAutoClaims(){
+  if(!autoClaimToggle.checked) return;
+  const possible = ['Early Five','Top Line','Middle Line','Bottom Line','Ticket Corner','Full House','2nd Full House'];
+  for(const p of possible){
+    try{
+      await claimPrize(p);
+    }catch(e){}
+  }
+}
+
+/* ================= Menu/Profile (Hamburger) ================= */
+(function setupHamburger(){
+  const menuToggleEl = document.getElementById('menuToggle');
+  const menuPanelEl = document.getElementById('menuPanel');
+  menuToggleEl.addEventListener('click', ()=> menuPanelEl.classList.toggle('show'));
+  document.addEventListener('click', (e)=>{
+    if(!menuPanelEl.contains(e.target) && e.target !== menuToggleEl){
+      menuPanelEl.classList.remove('show');
+    }
+  });
+})();
+if(viewProfileBtn){
+  viewProfileBtn.addEventListener('click', async ()=>{
+    if(!firebase.auth().currentUser && !localStorage.getItem(LS_UID)){
+      showLoginModal(); return;
+    }
+    let name = localStorage.getItem(LS_NAME) || myName || 'Guest';
+    let uid = localStorage.getItem(LS_UID) || userId || 'N/A';
+    let contact = localStorage.getItem(LS_CONTACT) || myContact || 'N/A';
+    let email = localStorage.getItem(LS_EMAIL) || myEmail || 'N/A';
+
+    if(firebase.auth().currentUser){
+      const u = firebase.auth().currentUser;
+      uid = u.uid; contact = u.phoneNumber || contact || 'N/A';
+      try{
+        const snap = await db.ref('users/'+uid).once('value');
+        const data = snap.val();
+        if(data){ name=data.name||name; email=data.email||email; setLocalProfile(uid,name,contact,email); }
+      }catch(e){}
+    }
+    const balSnap = await db.ref('users/'+uid).once('value');
+    const bal = (balSnap.val() && balSnap.val().balance) || 0;
+    alert(`Your Profile:\nUser Name: ${name}\nUser ID: ${uid}\nContact: ${contact}\nEmail: ${email}\nBalance: ₹${bal}`);
+  });
+}
+
+if(viewHistoryBtn){
+  viewHistoryBtn.addEventListener('click', async () => {
+    if (!userId && !localStorage.getItem(LS_UID)) {
+      alert('Please log in to view history.');
+      showLoginModal();
+      return;
+    }
+    const uid = localStorage.getItem(LS_UID) || userId;
+    const gameHistorySnap = await userHistoryRef.child(uid).once('value');
+    const withdrawalHistorySnap = await withdrawalHistoryRef.child(uid).once('value');
+    const gameHistory = gameHistorySnap.val() || {};
+    const withdrawalHistory = withdrawalHistorySnap.val() || {};
+
+    let gameHtml = '<h4>Game History</h4>';
+    if (Object.keys(gameHistory).length === 0) {
+      gameHtml += '<p>No game history found.</p>';
+    } else {
+      Object.values(gameHistory).forEach(h => {
+        gameHtml += `<p>• ${h.type} of ${h.prize} for ₹${h.amount} in game ${h.gameId} on ${new Date(h.timestamp).toLocaleString()}</p>`;
+      });
+    }
+
+    let withdrawalHtml = '<h4>Payment History</h4>';
+    if (Object.keys(withdrawalHistory).length === 0) {
+      withdrawalHtml += '<p>No payment history found.</p>';
+    } else {
+      Object.values(withdrawalHistory).forEach(h => {
+        withdrawalHtml += `<p>• ${h.type} of ₹${h.amount} to ${h.dest} on ${new Date(h.timestamp).toLocaleString()} (Status: ${h.status})</p>`;
+      });
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `<div class="modal" style="text-align:left;">
+        <div class="row" style="justify-content:space-between; align-items:center;">
+            <h3>History</h3>
+            <button class="btn secondary" onclick="document.body.removeChild(this.closest('.modal-backdrop'));">Close</button>
+        </div>
+        ${gameHtml}
+        ${withdrawalHtml}
+    </div>`;
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+  });
+}
+
+/* ================= Presence management ================= */
+function attachPresence(){
+  try{
+    if(myPresence){ myPresence.remove(); myPresence=null; }
+  }catch(e){}
+  const id = localStorage.getItem(LS_UID) || userId || ('guest_'+Math.random().toString(36).slice(2,8));
+  myPresence = presenceRef.push({id, time:firebase.database.ServerValue.TIMESTAMP});
+  myPresence.onDisconnect().remove();
+}
+presenceRef.on('value',snap=>{
+  const n = snap.numChildren()||0;
+  if(!activeRoom){
+    waitingLiveText.textContent = 'Live Users: ' + n;
+    liveDot.style.background = (n>0)?'#00e676':'#bdbdbd';
+  }
+});
+
+/* ================= Auth lifecycle & OTP handlers ================= */
+firebase.auth().onAuthStateChanged(async (u)=>{
+  if(u){
+    applyAuthUser(u); attachPresence();
+    try{
+      const snap = await db.ref('users/'+u.uid).once('value');
+      const data = snap.val();
+      if(data){
+        myName = data.name || myName; myEmail = data.email || myEmail; myContact = u.phoneNumber || data.phone || myContact;
+        setLocalProfile(u.uid, myName, myContact, myEmail);
+      }else{
+        showLoginModal(); detailsStep.style.display='block';
+      }
+      getUserBalance(u.uid).then(bal => document.getElementById('myWinnings').textContent = bal);
+    }catch(e){}
+  }else{
+    ensureGuest(); attachPresence();
+  }
+  loadUserTicket();
+});
+function ensureRecaptcha(){
+  if(!recaptchaVerifier){
+    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size:'normal' });
+    recaptchaVerifier.render();
+  }
+}
+if(sendOtpBtn) sendOtpBtn.addEventListener('click', async ()=>{
+  try{
+    ensureRecaptcha();
+    const phone=(phoneInput.value||'').trim();
+    if(!phone) return alert('Enter phone (e.g., +91XXXXXXXXXX)');
+    confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, recaptchaVerifier);
+    alert('OTP sent!');
+  }catch(e){ alert(e.message); }
+});
+if(verifyOtpBtn) verifyOtpBtn.addEventListener('click', async ()=>{
+  try{
+    if(!confirmationResult) return alert('Send OTP first.');
+    const code=(otpInput.value||'').trim(); if(!code) return alert('Enter OTP');
+    const result=await confirmationResult.confirm(code);
+    const u=result.user; applyAuthUser(u);
+    const snap=await db.ref('users/'+u.uid).once('value');
+    if(!snap.exists()){ detailsStep.style.display='block'; }
+    else{
+      const data=snap.val(); myName=data.name||'Guest'; myEmail=data.email||''; myContact=u.phoneNumber||data.phone||'';
+      setLocalProfile(u.uid,myName,myContact,myEmail); hideLoginModal(); attachPresence(); alert('Login successful!');
+    }
+  }catch(e){ alert(e.message); }
+});
+if(document.getElementById('saveDetailsBtn')){
+  document.getElementById('saveDetailsBtn').addEventListener('click', async ()=>{
+    try{
+      const u=firebase.auth().currentUser; if(!u) return alert('Not logged in');
+      const name=(nameInput.value||'').trim()||'Guest'; const email=(emailInput.value||'').trim()||''; const phone=u.phoneNumber||'';
+      await db.ref('users/'+u.uid).set({name,email,phone,userId:u.uid, balance:0});
+      myName=name; myEmail=email; myContact=phone; userId=u.uid;
+      setLocalProfile(userId,myName,myContact,myEmail);
+      detailsStep.style.display='none'; hideLoginModal(); attachPresence(); alert('Details saved!');
+    }catch(e){ alert(e.message); }
+  });
+}
+
+/* ================= Share / Withdraw UI (listeners) ================= */
+if(document.getElementById('withdrawBtn')){
+  withdrawBtn.addEventListener('click', ()=>{
+    if(!(localStorage.getItem(LS_UID) || firebase.auth().currentUser)) { showLoginModal(); return; }
+    withdrawModal.style.display='flex';
+  });
+  cancelWithdrawBtn.addEventListener('click', ()=> withdrawModal.style.display='none');
+  submitWithdrawBtn.addEventListener('click', async ()=>{
+    const amt = Number(withdrawAmount.value||0);
+    const dest = (withdrawDest.value||'').trim();
+    if(!amt || !dest) return alert('Enter amount and UPI/Phone');
+    const uid = localStorage.getItem(LS_UID) || userId || 'guest';
+    const name = localStorage.getItem(LS_NAME) || myName || 'Guest';
+
+    await ensureUserRecord(uid);
+    const bal = await getUserBalance(uid);
+    if(bal < amt) return alert('Insufficient balance for withdrawal.');
+    const newBal = bal - amt;
+    await setUserBalance(uid, newBal);
+
+    const wref = db.ref('withdrawals').push();
+    await wref.set({
+      userId: uid, name, amount: amt, dest, time: firebase.database.ServerValue.TIMESTAMP, status: 'pending'
+    });
+    withdrawModal.style.display='none';
+    document.getElementById('myWinnings').textContent = newBal;
+    alert('Withdrawal request recorded. Admin will be notified.');
+
+    withdrawalHistoryRef.child(uid).push({
+      type: 'withdrawal',
+      amount: amt,
+      dest,
+      status: 'pending',
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+  });
+}
+
+/* ================= ROOM SYSTEM: create/join/start/draw ================= */
+let roomListeners = [];
+function uiSetRoomStatus(text){ roomStatusPill.textContent = text; }
+function refreshPlayers(players){
+  const arr = Object.entries(players||{}).map(([uid,p])=> `${p.name||'Player'} ${p.paid?'✅':'❌'}`);
+  playersListEl.innerHTML = arr.length ? ('Players: '+arr.join(' | ')) : 'Players: (none)';
+}
+async function createRoom(){
+  if(!(localStorage.getItem(LS_UID) || firebase.auth().currentUser)) { showLoginModal(); return; }
+  isHost=true;
+  activeRoom = 'room_'+Math.random().toString(36).slice(2,8);
+  await db.ref('rooms/'+activeRoom).set({
+    host: localStorage.getItem(LS_UID) || ('host_'+Math.random().toString(36).slice(2,6)),
+    hostName: localStorage.getItem(LS_NAME) || 'Host',
+    status: ROOM_STATUS.WAIT,
+    createdAt: firebase.database.ServerValue.TIMESTAMP
+  });
+  await db.ref(`rooms/${activeRoom}/players/${(localStorage.getItem(LS_UID) || 'guest')}`).set({ name: localStorage.getItem(LS_NAME)||'Host', paid:false });
+  roomInfoEl.textContent='Room Created: '+activeRoom+' | Share this ID with friends.';
+  joinRoomIdInput.style.display = 'none';
+  roomBuyTicketBtn.style.display = 'none';
+  startRoomGameBtn.style.display = 'block';
+  startRoomGameBtn.disabled = true;
+  uiSetRoomStatus('Waiting');
+  attachRoomListeners(activeRoom);
+}
+async function joinRoomById(rid){
+  if(!rid) return alert('Enter Room ID');
+  if(!(localStorage.getItem(LS_UID) || firebase.auth().currentUser)) { showLoginModal(); return; }
+  const snap = await db.ref('rooms/'+rid).once('value');
+  if(!snap.exists()) return alert('Room not found');
+  const data = snap.val();
+  if(data.status!==ROOM_STATUS.WAIT) return alert('Room already started/closed');
+  activeRoom = rid;
+  isHost = (data.host === (localStorage.getItem(LS_UID) || 'guest'));
+  await db.ref(`rooms/${rid}/players/${(localStorage.getItem(LS_UID) || 'guest')}`).update({ name: localStorage.getItem(LS_NAME)||'Player', paid:false });
+  roomInfoEl.textContent = `Joined Room: ${rid} | Host: ${data.hostName || data.host} `;
+  joinRoomIdInput.style.display = 'none';
+  roomBuyTicketBtn.style.display = 'inline-block';
+  if(isHost){
+    startRoomGameBtn.style.display = 'inline-block';
+    startRoomGameBtn.disabled = true;
+  } else {
+    startRoomGameBtn.style.display = 'none';
+  }
+  uiSetRoomStatus('Waiting');
+  attachRoomListeners(rid);
+}
+function attachRoomListeners(rid){
+  roomListeners.forEach(ref=>ref.off());
+  roomListeners = [];
+  const roomRef = db.ref(`rooms/${rid}`);
+  const playersRef = db.ref(`rooms/${rid}/players`);
+  const statusRef = db.ref(`rooms/${rid}/status`);
+  const drawRef = db.ref(`rooms/${rid}/draw`);
+
+  playersRef.on('value', s=>{
+    const players = s.val() || {};
+    refreshPlayers(players);
+    const myUid = localStorage.getItem(LS_UID) || 'guest';
+    const amInRoom = !!players[myUid];
+    if(amInRoom){
+      roomBuyTicketBtn.style.display = players[myUid].paid ? 'none' : 'inline-block';
+      if(isHost){
+        startRoomGameBtn.style.display = 'inline-block';
+      }
+    } else {
+      roomBuyTicketBtn.style.display = 'none';
+      startRoomGameBtn.style.display = 'none';
+    }
+    const uids = Object.keys(players);
+    const allPaid = uids.length>0 && uids.every(uid => players[uid].paid === true);
+    if(isHost){
+      startRoomGameBtn.disabled = !allPaid;
+    }
+    if(players[myUid] && players[myUid].ticket){
+      currentGrid = players[myUid].ticket;
+      renderTicket(currentGrid, '#'+(players[myUid].serial||'ROOM'));
+    }
+  });
+  roomListeners.push(playersRef);
+
+  statusRef.on('value', s=>{
+    const st = s.val();
+    if(st===ROOM_STATUS.WAIT) uiSetRoomStatus('Waiting');
+    else if(st===ROOM_STATUS.START) uiSetRoomStatus('Started');
+    else if(st===ROOM_STATUS.END) uiSetRoomStatus('Ended');
+  });
+  roomListeners.push(statusRef);
+
+  drawRef.on('value', s=>{
+    const d = s.val() || {};
+    const cur = d.current;
+    const hist = d.history || [];
+    if(cur){ latestNumber.textContent = 'Number: ' + cur; highlightBoard(cur, hist); speakTambolaNumber(cur); }
+    historyEl.textContent = hist.length ? hist.join(', ') : 'None';
+    waitingTitle.textContent = (d && d.startedAt) ? 'Room Draw Live' : 'Waiting for Draw...';
+    waitingDesc.textContent = (d && d.startedAt) ? `Room ${rid} playing` : 'Room waiting';
+  });
+  roomListeners.push(drawRef);
+}
+async function roomBuyTicket(){
+  if(!activeRoom) return alert('Create or Join a room first');
+  alert('Payment Successful!');
+  const grid = generateTicketMatrix();
+  const serial = Math.floor(Math.random()*100000);
+  const uid = localStorage.getItem(LS_UID) || 'guest';
+  await db.ref(`rooms/${activeRoom}/players/${uid}`).update({ paid:true, ticket: grid, serial });
+  currentGrid = grid;
+  renderTicket(currentGrid, '#'+serial);
+  saveTicketToDB({ ticket: grid, serial, gameId: activeRoom, gameName: `Room ${activeRoom}`, status:'booked' }, activeRoom);
+}
+async function startRoomGame(){
+  if(!isHost) return alert('Only host can start.');
+  const plySnap = await db.ref(`rooms/${activeRoom}/players`).once('value');
+  const players = plySnap.val()||{};
+  const uids = Object.keys(players);
+  const allPaid = uids.length>0 && uids.every(uid => players[uid].paid === true);
+  if(!allPaid) return alert('All players must buy ticket first.');
+  const nums = shuffle(Array.from({length:90},(_,i)=>i+1));
+  await db.ref(`rooms/${activeRoom}`).update({ status: ROOM_STATUS.START });
+  await db.ref(`rooms/${activeRoom}/draw`).set({ current:null, history:[], startedAt:Date.now(), intervalMs:DRAW_INTERVAL_MS, host: localStorage.getItem(LS_UID)||'host' });
+  let idx=0;
+  clearInterval(drawTimer);
+  drawTimer = setInterval(async ()=>{
+    if(idx>=nums.length){
+      clearInterval(drawTimer);
+      await db.ref(`rooms/${activeRoom}`).update({ status: ROOM_STATUS.END });
+      speakTambolaSentence("Game Over, Try Next Time");
+      return;
+    }
+    const n = nums[idx++];
+    const ref = db.ref(`rooms/${activeRoom}/draw`);
+    const snap = await ref.once('value');
+    const d = snap.val()||{history:[]};
+    const hist = d.history || [];
+    hist.push(n);
+    await ref.update({ current:n, history:hist });
+    applyAutoTickForNumber(n, hist);
+    await tryAutoClaims();
+  }, DRAW_INTERVAL_MS);
+}
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]] } return arr; }
+function applyAutoTickForNumber(n, hist){
+  const doAuto = autoTickToggle.checked;
+  if(!doAuto || !currentGrid) return;
+  const cells = ticketEl.querySelectorAll('.ticket-cell');
+  cells.forEach(c=>{
+    const val = Number(c.textContent);
+    if(!isNaN(val) && val === n){
+      if(!c.classList.contains('ticked')) c.classList.add('ticked');
+      const ticksNow = JSON.parse(localStorage.getItem('ticks_'+(userId||'guest'))||'[]');
+      if(!ticksNow.includes(n)) { ticksNow.push(n); localStorage.setItem('ticks_'+(userId||'guest'), JSON.stringify(ticksNow)); }
+    }
+  });
+}
+if(createRoomBtn) createRoomBtn.addEventListener('click', createRoom);
+if(joinRoomBtn) joinRoomBtn.addEventListener('click', ()=> {
+    joinRoomIdInput.style.display = 'block';
+    joinRoomBtn.textContent = 'Join Room';
+    joinRoomBtn.onclick = () => joinRoomById(joinRoomIdInput.value.trim());
+});
+if(roomBuyTicketBtn) roomBuyTicketBtn.addEventListener('click', roomBuyTicket);
+if(startRoomGameBtn) startRoomGameBtn.addEventListener('click', startRoomGame);
+
+/* ================= Initial setup ================= */
+ensureGuest();
+attachPresence();
+uiSetRoomStatus('No Room');
+userTicketContainer.style.display='none';
+latestNumber.textContent='—';
+historyEl.textContent='None';
+window.addEventListener('beforeunload', ()=>{
+  try{
+    if(myPresence) myPresence.remove();
+    if(activeRoom) db.ref(`rooms/${activeRoom}/players/${(localStorage.getItem(LS_UID)||'guest')}`).remove();
+  }catch(e){}
+});
+
+/* ================= Music Control (and music button) ================= */
+let isUserMuted = false;
+musicRef.on("value", snap=>{
+  const data = snap.val()||{};
+  if(!data.url) return;
+  if(player.src !== data.url) player.src = data.url;
+  if(data.isPlaying && !isUserMuted){
+    player.play().catch(()=>{});
+  } else {
+    player.pause();
+  }
+});
+musicBtn.addEventListener("click", ()=>{
+  if(player.paused){
+    isUserMuted = false;
+    player.play().catch(()=>{});
+    musicBtn.style.opacity="1";
+  } else {
+    isUserMuted = true;
+    player.pause();
+    musicBtn.style.opacity="0.5";
+  }
+});
+
+/* ================== Notifications (global + per-user) ================== */
+notificationRef.on('value', snap => {
+  const data = snap.val() || {};
+  renderNotificationsFromObj(data, false);
+});
+function renderNotificationsFromObj(obj, append=false){
+  if(!obj){ if(!append) notificationsList.innerHTML = 'No notifications'; return; }
+  const arr = Object.values(obj).map(x=>x);
+  arr.sort((a,b)=> (b.time||0) - (a.time||0));
+  let out = '';
+  arr.forEach(n => {
+    out += `<div style="padding:6px;border-bottom:1px solid #222">${escapeHtml(n.message || n.text || n) } <div class="muted small">${n.time? new Date(n.time).toLocaleString() : ''}</div></div>`;
+  });
+  const notificationsList = document.getElementById('notificationsList');
+  if(notificationsList) notificationsList.innerHTML = out || 'No notifications';
+}
+
+/* =============== Speech (AI Voice Announcer) =============== */
+/* Use Web Speech API to announce numbers in clear voice. Fallback: console. */
+function speak(text){
+  if(!("speechSynthesis" in window)) return console.log("synth unavailable:", text);
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.95;
+  utter.pitch = 1.0;
+  window.speechSynthesis.cancel(); // cancel any previous
+  window.speechSynthesis.speak(utter);
+}
+function speakTambolaNumber(n){
+  // speak "Number 23 — Two Three" style
+  try{
+    const words = numberToWords(n);
+    speak(`Number ${n}. ${words}`);
+  }catch(e){ console.warn(e); }
+}
+function speakTambolaSentence(s){ try { speak(s); } catch(e){} }
+function numberToWords(n){
+  // quick friendly mapping for two-digit readout
+  if(n <= 20) {
+    const names = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+    return names[n] || n;
+  }
+  const tens = Math.floor(n / 10);
+  const ones = n % 10;
+  const tensNames = ['', '', 'twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+  if(ones === 0) return tensNames[tens] || n;
+  return `${tensNames[tens]} ${numberToWords(ones)}`;
+}
+
+/* ================= Utility: escape and others ================= */
+function escapeHtml(str){
+  return String(str||'').replace(/[&<>"'`]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[s]));
+}
+
+/* ================= Init small UI bindings ================= */
+/* Show quick prize grid done earlier; wire buyTicket buttons */
+[buyTicketBtnTop, buyTicketBtnBottom].forEach(btn=>{
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    if (!localStorage.getItem(LS_UID) && !firebase.auth().currentUser) {
+      showLoginModal();
+      return;
+    }
+    alert("Payment Placeholder: Payment Success!");
+    const grid = generateTicketMatrix();
+    const serial = Math.floor(Math.random()*100000);
+    const gameId = 'global-' + Date.now();
+    const ticketData = { ticket: grid, serial, gameId, gameName: 'Mega Contest', status: 'booked' };
+    saveTicketToDB(ticketData, gameId);
+    currentGrid = grid;
+    currentTicketSerial = serial;
+    currentTicketGameId = gameId;
+    renderTicket(currentGrid, `#${serial}`);
+  });
+});
+
+/* Option: watch live button already wired in videoRef listener above */
+
+/* Load any local profile and UI */
+(function boot(){
+  // load saved user/profile
+  loadProfileFromLocal();
+  if(localStorage.getItem(LS_UID)){
+    // set winnings if any
+    const uid = localStorage.getItem(LS_UID);
+    getUserBalance(uid).then(b => document.getElementById('myWinnings').textContent = b);
+  }
+  // attach presence for guest if not logged in
+  attachPresence();
+  // initial UI states
+  uiSetRoomStatus('No Room');
+  userTicketContainer.style.display='none';
+  latestNumber.textContent='—';
+  historyEl.textContent='None';
+})();
+
+/* END of assembled index.html user code */
+</script>
+</body>
+</html>
