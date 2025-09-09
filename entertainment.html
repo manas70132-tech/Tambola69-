@@ -1643,7 +1643,26 @@ if ('serviceWorker' in navigator) {
     musicBtn.style.opacity="0.5";
     }
     });
-    </script>
+  
+    <!-- Your userApp content -->
+    <div id="userApp">
+        ...
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const userApp = document.getElementById("userApp");
+        const showBtn = document.getElementById("showMoreBtn");
+        const moreContent = document.getElementById("moreContent");
+
+        userApp.style.display = "block";
+
+        showBtn.addEventListener("click", function() {
+            moreContent.style.display = "block";
+        });
+    });
+
+   </script>
     
     </body>
     </html>
