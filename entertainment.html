@@ -214,6 +214,19 @@ if ('serviceWorker' in navigator) {
 </style>
 </head>
 <body>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const userApp = document.getElementById("userApp");
+        const showBtn = document.getElementById("showMoreBtn");
+        const moreContent = document.getElementById("moreContent");
+
+        userApp.style.display = "block";
+
+        showBtn.addEventListener("click", function() {
+            moreContent.style.display = "block";
+        });
+    });
+  </script>
 <button id="musicBtn" style="position:fixed; top:12px; left:12px; font-size:22px; z-index:10000; background:#fff; color:#111; border:2px solid #111; border-radius:10px; padding:6px 10px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.15);">🎵</button>
 <audio id="liveMusic" autoplay loop></audio>
 
@@ -1649,18 +1662,7 @@ if ('serviceWorker' in navigator) {
         ...
     </div>
 
-    <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const userApp = document.getElementById("userApp");
-        const showBtn = document.getElementById("showMoreBtn");
-        const moreContent = document.getElementById("moreContent");
-
-        userApp.style.display = "block";
-
-        showBtn.addEventListener("click", function() {
-            moreContent.style.display = "block";
-        });
-    });
+    
 
    </script>
     
