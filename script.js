@@ -220,5 +220,31 @@
   </div>
 
   <script src="script.js"></script>
+  // Set target date/time (yyyy-mm-dd hh:mm:ss format)
+let countdownDate = new Date("2025-09-10 18:00:00").getTime();
+
+function updateCountdown() {
+    let now = new Date().getTime();
+    let distance = countdownDate - now;
+
+    if (distance < 0) {
+        document.getElementById("countdown").innerHTML = "TIME UP";
+        clearInterval(timerInterval);
+        return;
+    }
+
+    let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    document.getElementById("countdown").innerHTML =
+        ("0" + hours).slice(-2) + " : " +
+        ("0" + minutes).slice(-2) + " : " +
+        ("0" + seconds).slice(-2);
+}
+
+// Update countdown every second
+let timerInterval = setInterval(updateCountdown, 1000);
+updateCountdown(); // Initial call
 </body>
 </html>
