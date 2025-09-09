@@ -1,4 +1,4 @@
-{
+ese{
 "name": "Tambola 69",
 "short_name": "Tambola",
 "start_url": "./index.html",
@@ -17,4 +17,10 @@
 "sizes": 512-512",
 "type": "image/png}
 ]
+}
+{
+  "status": "running",
+  "ticketsleft":80,
+  "prizePercentage": 45,
+  "endAt": 1699999999999
 }
