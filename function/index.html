@@ -1,0 +1,237 @@
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+admin.initializeApp();
+
+const db = admin.database();
+
+/**
+ * Validates a Tambola ticket based on the drawn numbers.
+ * @param {Array<Array<number|null>>} ticket - The 3x9 ticket matrix.
+ * @param {Array<number>} drawnNumbers - The list of numbers that have been drawn.
+ * @returns {Array<string>} - A list of valid prize names.
+ */
+function validateTicket(ticket, drawnNumbers) {
+    const prizes = [];
+    const allTicketNumbers = ticket.flat().filter(num => num !== null);
+    const tickedNumbers = allTicketNumbers.filter(num => drawnNumbers.includes(num));
+
+    // Early Five
+    if (tickedNumbers.length >= 5) {
+        let count = 0;
+        const ticketNumbers = tickedNumbers;
+        
+        for (let i = 0; i < ticketNumbers.length; i++) {
+            count++;
+        }
+        if (count >= 5) {
+            prizes.push('Early Five');
+        }
+    }
+    
+    // Check if the ticket is a subset of the drawn numbers
+    const isFullHouse = allTicketNumbers.every(num => drawnNumbers.includes(num));
+    if (isFullHouse) {
+        prizes.push('Full House');
+    }
+
+    // Lines
+    const rows = [
+        ticket[0].filter(num => num !== null),
+        ticket[1].filter(num => num !== null),
+        ticket[2].filter(num => num !== null)
+    ];
+
+    if (rows[0].every(num => drawnNumbers.includes(num))) {
+        prizes.push('Top Line');
+    }
+    if (rows[1].every(num => drawnNumbers.includes(num))) {
+        prizes.push('Middle Line');
+    }
+    if (rows[2].every(num => drawnNumbers.includes(num))) {
+        prizes.push('Bottom Line');
+    }
+
+    // Corners
+    const corners = [
+        ticket[0][0], // top-left
+        ticket[0][8], // top-right
+        ticket[2][0], // bottom-left
+        ticket[2][8]  // bottom-right
+    ].filter(num => num !== null);
+
+    const cornerValues = [
+        ticket[0][0], // Top-left
+        ticket[0][8], // Top-right
+        ticket[2][0], // Bottom-left
+        ticket[2][8]  // Bottom-right
+    ];
+
+    // Filter out nulls
+    const presentCorners = cornerValues.filter(num => num !== null);
+
+    // Check if all present corners are in drawnNumbers
+    if (presentCorners.every(num => drawnNumbers.includes(num))) {
+        prizes.push('Ticket Corner');
+    }
+
+    // 2nd Full House (needs the first full house to be claimed)
+    // The logic for this is more complex and would need to check for a claim record.
+    // We'll handle this on the client side for simplicity.
+
+    // A note on logic: this function only checks if a prize "is possible". 
+    // The actual prize claiming logic (e.g., has this prize already been claimed?) 
+    // happens in the main callable function.
+
+    return prizes;
+}
+
+exports.claimPrize = functions.https.onCall(async (data, context) => {
+    const { gameId, prizeName, ticket, userId } = data;
+
+    if (!context.auth) {
+        return { success: false, message: 'Authentication required.' };
+    }
+
+    const gameRef = db.ref(gameId.startsWith('room_') ? `rooms/${gameId}/draw` : `currentGame`);
+    const claimsRef = db.ref(`claims/${gameId}`);
+    const winnersRef = db.ref('winners');
+    const userHistoryRef = db.ref(`userHistory/${userId}`);
+    const userRef = db.ref(`users/${userId}`);
+
+    try {
+        const gameSnap = await gameRef.once('value');
+        const gameData = gameSnap.val();
+        if (!gameData || !gameData.history) {
+            return { success: false, message: 'Game data not found.' };
+        }
+        
+        const drawnNumbers = gameData.history;
+        const validPrizes = validateTicket(ticket, drawnNumbers);
+
+        if (!validPrizes.includes(prizeName)) {
+            return { success: false, message: 'Invalid claim. Your ticket does not qualify for this prize with the current drawn numbers.' };
+        }
+
+        const claimsSnap = await claimsRef.once('value');
+        const claimedPrizes = claimsSnap.val() || {};
+        
+        // Check if prize has already been claimed by anyone
+        const isPrizeClaimed = Object.values(claimedPrizes).some(claim => claim.prizeName === prizeName);
+        if (isPrizeClaimed) {
+            return { success: false, message: 'This prize has already been claimed.' };
+        }
+        
+        // Check for 2nd Full House
+        if(prizeName === '2nd Full House'){
+            const firstFullHouseClaim = Object.values(claimedPrizes).find(claim => claim.prizeName === 'Full House');
+            if(!firstFullHouseClaim){
+                return { success: false, message: '2nd Full House can only be claimed after the 1st Full House.' };
+            }
+        }
+
+        const prizeAmountSnap = await db.ref('prizes').child(prizeName).once('value');
+        const prizeAmount = prizeAmountSnap.val() || 0;
+
+        // Record the claim
+        const claimKey = claimsRef.push().key;
+        await claimsRef.child(claimKey).set({
+            prizeName,
+            userId,
+            ticket,
+            timestamp: admin.database.ServerValue.TIMESTAMP,
+            gameId,
+            status: 'claimed'
+        });
+
+        // Update user's balance
+        await userRef.transaction(currentData => {
+            if (currentData === null) {
+                return { balance: prizeAmount, name: context.auth.token.name || 'Player' };
+            }
+            currentData.balance = (currentData.balance || 0) + prizeAmount;
+            return currentData;
+        });
+
+        // Add to user's history
+        await userHistoryRef.push({
+            type: 'claim',
+            prize: prizeName,
+            amount: prizeAmount,
+            gameId,
+            gameName: gameId,
+            timestamp: admin.database.ServerValue.TIMESTAMP
+        });
+
+        // Add to winners list
+        await winnersRef.push({
+            name: context.auth.token.name || 'Player',
+            userId,
+            prize: prizeName,
+            amount: prizeAmount,
+            timestamp: admin.database.ServerValue.TIMESTAMP,
+            gameId
+        });
+
+        return { success: true, message: `Congratulations! You have claimed the ${prizeName} for ₹${prizeAmount}.` };
+    } catch (error) {
+        console.error('Error during prize claim:', error);
+        return { success: false, message: 'An internal error occurred.' };
+    }
+});
+
+// A Firebase Function to run a scheduled Tambola game draw.
+exports.runGlobalGame = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+    const gameRef = db.ref('currentGame');
+    const gameSnap = await gameRef.once('value');
+    const gameData = gameSnap.val() || {
+        status: 'idle',
+        history: [],
+        numbers: Array.from({ length: 90 }, (_, i) => i + 1).sort(() => Math.random() - 0.5),
+        drawn: 0
+    };
+
+    if (gameData.status === 'started' && gameData.drawn < 90) {
+        const nextNumber = gameData.numbers[gameData.drawn];
+        const newHistory = [...gameData.history, nextNumber];
+        
+        await gameRef.update({
+            liveNumber: nextNumber,
+            history: newHistory,
+            drawn: gameData.drawn + 1,
+            lastDrawTime: admin.database.ServerValue.TIMESTAMP,
+            countdown: 60 // Next draw in 60 seconds
+        });
+    } else if (gameData.status === 'idle') {
+        const nextGameRef = db.ref('nextGame');
+        const ticketsSnap = await db.ref('userTickets').once('value');
+        const tickets = ticketsSnap.val() || {};
+        const ticketsCount = Object.keys(tickets).length;
+        const prizePercentage = Math.min(100, (ticketsCount / 100) * 100);
+
+        nextGameRef.set({
+            countdown: 3600, // 1 hour until next game start
+            ticketsLeft: 100 - ticketsCount,
+            prizePercentage: prizePercentage,
+            totalSpots: 100
+        });
+
+        if (ticketsCount >= 10) { // Start a game if enough tickets are sold
+            const newNumbers = Array.from({ length: 90 }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+            await gameRef.set({
+                status: 'started',
+                liveNumber: null,
+                history: [],
+                numbers: newNumbers,
+                drawn: 0,
+                lastDrawTime: admin.database.ServerValue.TIMESTAMP,
+                countdown: 60
+            });
+        }
+    } else if (gameData.drawn >= 90) {
+        await gameRef.update({
+            status: 'ended',
+            countdown: null
+        });
+    }
+});
+
