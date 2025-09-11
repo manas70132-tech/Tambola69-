@@ -27,12 +27,12 @@ if ('serviceWorker' in navigator) {
   .ticket{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;}
   .ticket-cell{padding:10px;border-radius:6px;font-weight:700;cursor:pointer;user-select:none;border:1px solid #333;position:relative;transition:0.2s;background:#fff;}
   .ticket-cell.empty{background:transparent;border-style:dashed;cursor:default;color:transparent;}
-  .ticket-cell.ticked::after{content:\"✓\";position:absolute;top:2px;right:2px;background:green;color:#fff;padding:1px 3px;border-radius:50%;font-weight:900;font-size:10px;pointer-events:none;box-shadow:0 0 2px rgba(0,0,0,0.4);}
+  .ticket-cell.ticked::after{content:"✓";position:absolute;top:2px;right:2px;background:green;color:#fff;padding:1px 3px;border-radius:50%;font-weight:900;font-size:10px;pointer-events:none;box-shadow:0 0 2px rgba(0,0,0,0.4);}
   .ticket-cell.buggy{box-shadow:inset 0 0 0 3px rgba(255,0,0,0.12); background:linear-gradient(90deg, rgba(255,200,200,0.4), rgba(255,230,230,0.2));}
   .claim-buttons{margin:10px;}
   .claim-button{background:green;color:#fff;padding:10px 12px;border:none;border-radius:6px;cursor:pointer;margin:4px;font-weight:700;}
   .claimed-box, .winners-box, .next-game-box, .play-friends-box, .history-box{max-width:500px;margin:8px auto;padding:12px;border-radius:12px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
-  .claimed-line{color:#ffc107;font-weight:700;}
+  .claimed-line{color:red;font-weight:700;}
   .book-ticket, .join-game-button{background:#ff6600;color:#fff;padding:10px 20px;border:none;border-radius:8px;margin:10px;cursor:pointer;font-weight:700;}
   .book-ticket:hover, .join-game-button:hover{background:#e55b00;}
   .next-game-box h3, .play-friends-box h3, .claimed-box h3, .winners-box h3, .history-box h3{margin-bottom:8px;}
@@ -56,7 +56,7 @@ if ('serviceWorker' in navigator) {
   .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#fff;color:#000;font-weight:700;font-size:12px;margin-left:6px;}
   .muted{opacity:0.85;font-weight:600;}
   .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center;}
-  input[type=\"text\"], input[type=\"tel\"], input[type=\"email\"], input[type=\"number\"]{ padding:8px 10px;border:1px solid #ccc;border-radius:8px;min-width:180px;}
+  input[type="text"], input[type="tel"], input[type="email"], input[type="number"]{ padding:8px 10px;border:1px solid #ccc;border-radius:8px;min-width:180px;}
   .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; z-index:10000;}
   .modal{background:#fff; width:92%; max-width:420px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.3); padding:16px; text-align:left;}
   .modal h3{margin:0 0 8px;}
@@ -332,7 +332,15 @@ if ('serviceWorker' in navigator) {
 
 <div class="claimed-box" id="claimBox">
   <h3>Claim Your Prize 🎁</h3>
-  <div class="claim-buttons"></div>
+  <div class="claim-buttons">
+    <button class="claim-button" onclick="claimPrize('Early Five')">Early Five ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Top Line')">Top Line ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Middle Line')">Middle Line ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Bottom Line')">Bottom Line ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Ticket Corner')">Ticket Corner ₹500</button>
+    <button class="claim-button" onclick="claimPrize('Full House')">Full House ₹3000</button>
+    <button class="claim-button" onclick="claimPrize('2nd Full House')">2nd Full House ₹1000</button>
+  </div>
 </div>
 <div class="tambola-board-container">
   <h3>Tambola Board</h3>
@@ -439,15 +447,16 @@ if ('serviceWorker' in navigator) {
 
 <script>
     
-    const firebaseConfig = {
-      apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
-      authDomain: "tambola69-9dc8f.firebaseapp.com",
-      projectId: "tambola69-9dc8f",
-      storageBucket: "tambola69-9dc8f.firebasestorage.app",
-      messagingSenderId: "413290158586",
-      appId: "1:413290158586:web:70fff2d94b29206487ec43",
-      measurementId: "G-6WJNDX5DGB"
-     };
+   var firebaseConfig = {
+   apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+   authDomain: "tambola69-9dc8f.firebaseapp.com",
+   projectId: "tambola69-9dc8f",
+   storageBucket: "tambola69-9dc8f.firebasestorage.app",
+   messagingSenderId: "413290158586",
+   appId: "1:413290158586:web:70fff2d94b29206487ec43",
+   };
+   
+   
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
     
@@ -516,7 +525,6 @@ if ('serviceWorker' in navigator) {
     const userGamesRef = db.ref('userTickets');
     const claimsRef=db.ref('claims');
     const winnersRef=db.ref('winners');
-    const prizesRef=db.ref('prizes');
 
     /* ================= Decorative random box colors ================= */
     const boxes = [
@@ -724,14 +732,13 @@ if ('serviceWorker' in navigator) {
     // Function to render the tickets into HTML
     function renderUserGamesList(tickets) {
         let html = '';
-        if (!tickets) return 'No booked tickets yet.';
         Object.keys(tickets).forEach(gameId => {
             const ticketData = tickets[gameId];
-            if(!ticketData) return;
             html += `
                 <div class="game-info-item">
                     <div style="font-weight: bold;">Game: ${ticketData.gameName}</div>
-                    <div>Ticket ID: #${ticketData.serial}</div>
+                    <div>Ticket ID: ${ticketData.serial}</div>
+                    <div>Status: ${ticketData.status}</div>
                     <div><a href="#" onclick="showSpecificTicket('${gameId}')">View Ticket</a></div>
                 </div>
             `;
@@ -753,17 +760,17 @@ if ('serviceWorker' in navigator) {
 
     [buyTicketBtnTop, buyTicketBtnBottom].forEach(btn=>{
       if(!btn) return;
-      btn.addEventListener('click', async ()=>{
+      btn.addEventListener('click', ()=>{
         if (!userId) {
           showLoginModal();
           return;
         }
-        const gameId = 'global-game-' + Date.now();
+        alert("Payment Placeholder: Payment Success!");
         const grid = generateTicketMatrix();
-        const serial = Math.floor(100000 + Math.random() * 900000);
-        const ticketData = { ticket: grid, serial, gameId, gameName: 'Mega Contest', status: 'booked', boughtAt: firebase.database.ServerValue.TIMESTAMP };
-        await saveTicketToDB(ticketData, gameId);
-        alert("Ticket booked! Your ticket has been saved. Please wait for the game to start.");
+        const serial = Math.floor(Math.random()*100000);
+        const gameId = 'global-' + Date.now();
+        const ticketData = { ticket: grid, serial, gameId, gameName: 'Mega Contest', status: 'booked' };
+        saveTicketToDB(ticketData, gameId);
         currentGrid = grid;
         currentTicketSerial = serial;
         currentTicketGameId = gameId;
@@ -845,15 +852,8 @@ if ('serviceWorker' in navigator) {
         historyEl.textContent = historyArr.length ? historyArr.join(', ') : 'None';
         highlightBoard(liveNumber, historyArr);
         
-        if(status === 'started' && liveNumber) {
-            // Automatically tick the number on the user's active ticket if autotick is enabled
-            if (autoTickToggle.checked) {
-              applyAutoTickForNumber(liveNumber, historyArr);
-            }
-            // Attempt to auto-claim if auto-claim is enabled
-            if (autoClaimToggle.checked) {
-              tryAutoClaims('global-game'); // Assuming a fixed ID for global games
-            }
+        if (status === 'started' && countdown > 0) {
+            // No countdown for started game, it's a live draw
         }
     }
 
@@ -864,12 +864,12 @@ if ('serviceWorker' in navigator) {
         const totalSpots = data.totalSpots || 100;
 
         // Update UI elements for next game
-        document.getElementById('ticketsLeftTop').textContent = ticketsLeft;
-        document.getElementById('prizePercentageTop').textContent = `${prizePercentage}%`;
-        document.getElementById('TotalSpotTop').textContent = totalSpots;
         document.getElementById('ticketsLeftBottom').textContent = ticketsLeft;
         document.getElementById('prizePercentageBottom').textContent = `${prizePercentage}%`;
         document.getElementById('TotalSpotBottum').textContent = totalSpots;
+        document.getElementById('ticketsLeftTop').textContent = ticketsLeft;
+        document.getElementById('prizePercentageTop').textContent = `${prizePercentage}%`;
+        document.getElementById('TotalSpotTop').textContent = totalSpots;
         
         // Start the countdown timers
         if (countdown) {
@@ -895,6 +895,7 @@ if ('serviceWorker' in navigator) {
     // LISTENING TO VIDEO URL
     videoRef.on('value', snap => {
       const data = snap.val() || {};
+      const liveBtn = document.getElementById('watchLiveBtn');
       if (data.url && liveBtn) {
         liveBtn.onclick = function() {
           liveFrame.src = data.url + '?autoplay=1&rel=0';
@@ -909,32 +910,48 @@ if ('serviceWorker' in navigator) {
     const withdrawalHistoryRef = db.ref('withdrawalHistory');
     const notificationRef = db.ref('notifications');
 
-    const PRIZE_AMOUNTS = {};
+    const PRIZE_AMOUNTS = {
+      'Early Five':500, 'Top Line':500, 'Middle Line':500, 'Bottom Line':500,
+      'Full House':3000, 'Ticket Corner':500, 'Ticket Corner Prize':500, 'Each Line':500, '2nd Full House':1000
+    };
 
     function renderQuickPrizes() {
-        prizesRef.once('value', snapshot => {
-            const prizes = snapshot.val() || {};
-            const gridEl = document.getElementById('quickPrizeGrid');
-            gridEl.innerHTML = Object.entries(prizes).map(([name, amount]) => {
-                PRIZE_AMOUNTS[name] = amount;
-                return `<div class="prize-item"><div class="prize-name">${name}</div><div class="prize-amount">₹${amount}</div></div>`;
-            }).join('');
-            renderClaimButtons(prizes);
-        });
+        const prizes = [
+            { name: 'Early Five', amount: 500 },
+            { name: 'Full House', amount: 3000 },
+            { name: 'Each Line', amount: 500 },
+            { name: '2nd Full House', amount: 1000 }
+        ];
+        const gridEl = document.getElementById('quickPrizeGrid');
+        gridEl.innerHTML = prizes.map(p => `
+            <div class="prize-item">
+                <div class="prize-name">${p.name}</div>
+                <div class="prize-amount">₹${p.amount}</div>
+            </div>
+        `).join('');
     }
     renderQuickPrizes();
 
     document.getElementById('viewAllPrizesBtn').addEventListener('click', () => {
-        prizesRef.once('value', snapshot => {
-            const allPrizes = snapshot.val() || {};
-            const prizeList = Object.entries(allPrizes).map(([name, amount]) => `* ${name}: ₹${amount}`).join('\\n');
-            alert(`All Prize List:\\n\\n${prizeList}`);
-        });
+        const allPrizes = `
+        * Early Five Prize: ₹500
+        * Ticket Corner Prize: ₹500
+        * Each Line Prize: ₹500
+        * Full House Prize: ₹3000
+        * 2nd Full House Prize: ₹1000
+        `;
+        alert(`All Prize List:\n\n${allPrizes}`);
     });
 
     winnersRef.on('value',s=>{
       const data=s.val()||{};
-      const arr = Object.entries(data||{}).map(([k,w])=>{\n        const claimed = w.claimed?'<span class=\"winner-x\">X</span>':'';\n        const uname = w.name || w.userName || 'Player';\n        return `<div class=\"winner-row\">${claimed}<div>${uname} - ${w.prize||'Winner'}</div><div>₹${w.amount||0}</div></div>`;\n      });\n      winnerListEl.innerHTML = arr.length?arr.join(''):'No winners yet...';\n    });
+      const arr = Object.entries(data||{}).map(([k,w])=>{
+        const claimed = w.claimed?'<span class="winner-x">X</span>':'';
+        const uname = w.name || w.userName || 'Player';
+        return `<div class="winner-row">${claimed}<div>${uname} - ${w.prize||'Winner'}</div><div>₹${w.amount||0}</div></div>`;
+      });
+      winnerListEl.innerHTML = arr.length?arr.join(''):'No winners yet...';
+    });
 
     /* ================= Wallet helpers ================= */
     async function ensureUserRecord(uid){
@@ -970,7 +987,7 @@ if ('serviceWorker' in navigator) {
           // Check if the prize has already been claimed for this game
           const claimsSnap = await claimsRef.child(gameId).once('value');
           const claimedPrizes = claimsSnap.val() || {};
-          const isAlreadyClaimed = Object.values(claimedPrizes).some(c => c.prizeName === prizeName && c.userId === userId && c.gameId === gameId);
+          const isAlreadyClaimed = Object.values(claimedPrizes).some(c => c.prizeName === prizeName && c.userId === userId);
           if(isAlreadyClaimed) {
               alert("You have already claimed this prize.");
               return;
@@ -991,7 +1008,6 @@ if ('serviceWorker' in navigator) {
                   if (button.textContent.includes(prizeName)) {
                       button.innerHTML = `<span class="claimed-button-text">X</span> ${prizeName} ₹${PRIZE_AMOUNTS[prizeName]}`;
                       button.style.backgroundColor = 'gray';
-                      button.disabled = true;
                   }
               });
               // Update balance
@@ -1014,12 +1030,48 @@ if ('serviceWorker' in navigator) {
       for(const p of possible){
         try{
           await claimPrize(p, gameId, ticket);
-        }catch(e){}\n      }\n    }\n    \n    // Add this listener at the start of your script\n    claimsRef.on('value', snapshot => {\n      const allClaims = snapshot.val() || {};\n      // Visually update the claim buttons based on all claims\n      document.querySelectorAll('.claim-button').forEach(btn => {\n          const prizeName = btn.textContent.replace(/^.*?X\\s*|\\s₹.*$/g,'').trim();\n          const isClaimedByAnyone = Object.values(allClaims).some(claim => claim.prizeName === prizeName && claim.gameId === currentTicketGameId);\n          \n          if (isClaimedByAnyone) {\n              btn.innerHTML = `<span class=\"claimed-button-text\">X</span> ${prizeName} ₹${PRIZE_AMOUNTS[prizeName]}`; // Assuming you have prize amounts\n              btn.style.backgroundColor = 'gray';\n              btn.disabled = true;\n          } else {\n              btn.innerHTML = `${prizeName} ₹${PRIZE_AMOUNTS[prizeName]}`; // Assuming you have prize amounts\n              btn.style.backgroundColor = 'green';\n              btn.disabled = false;\n          }\n      });\n    });
+        }catch(e){}
+      }
+    }
+    
+    // Add this listener at the start of your script
+    claimsRef.on('value', snapshot => {
+      const allClaims = snapshot.val() || {};
+      const myTicketClaims = Object.values(allClaims).filter(claim => 
+          claim.userId === userId && claim.gameId === currentTicketGameId
+      );
+      
+      // Visually update the claim buttons
+      document.querySelectorAll('.claim-button').forEach(btn => {
+          const prizeName = btn.textContent.replace(/\s₹\d+.*$/,'');
+          const isClaimed = myTicketClaims.some(claim => claim.prizeName === prizeName);
+          
+          if (isClaimed) {
+              btn.innerHTML = `<span class="claimed-button-text">X</span> ${prizeName} ₹${PRIZE_AMOUNTS[prizeName]}`;
+              btn.style.backgroundColor = 'gray';
+              btn.disabled = true;
+          } else {
+              btn.innerHTML = `${prizeName} ₹${PRIZE_AMOUNTS[prizeName]}`;
+              btn.style.backgroundColor = 'green';
+              btn.disabled = false;
+          }
+      });
+    });
 
     /* ================= Menu/Profile (Hamburger) ================= */
-    (function setupHamburger(){\n      const menuToggleEl = document.getElementById('menuToggle');\n      const menuPanelEl = document.getElementById('menuPanel');\n      menuToggleEl.addEventListener('click', ()=> menuPanelEl.classList.toggle('show'));\n      document.addEventListener('click', (e)=>{\n        if(!menuPanelEl.contains(e.target) && e.target !== menuToggleEl){\n          menuPanelEl.classList.remove('show');\n        }\n      });\n    })();
+    (function setupHamburger(){
+      const menuToggleEl = document.getElementById('menuToggle');
+      const menuPanelEl = document.getElementById('menuPanel');
+      menuToggleEl.addEventListener('click', ()=> menuPanelEl.classList.toggle('show'));
+      document.addEventListener('click', (e)=>{
+        if(!menuPanelEl.contains(e.target) && e.target !== menuToggleEl){
+          menuPanelEl.classList.remove('show');
+        }
+      });
+    })();
     if(viewProfileBtn){
-      viewProfileBtn.addEventListener('click', async ()=>{\n        if(!firebase.auth().currentUser && !localStorage.getItem(LS_UID)){
+      viewProfileBtn.addEventListener('click', async ()=>{
+        if(!firebase.auth().currentUser && !localStorage.getItem(LS_UID)){
           showLoginModal(); return;
         }
         let name = localStorage.getItem(LS_NAME) || myName || 'Guest';
@@ -1034,10 +1086,11 @@ if ('serviceWorker' in navigator) {
             const snap = await db.ref('users/'+uid).once('value');
             const data = snap.val();
             if(data){ name=data.name||name; email=data.email||email; setLocalProfile(uid,name,contact,email); }
-          }catch(e){}\n        }
+          }catch(e){}
+        }
         const balSnap = await db.ref('users/'+uid).once('value');
         const bal = (balSnap.val() && balSnap.val().balance) || 0;
-        alert(`Your Profile:\\nUser Name: ${name}\\nUser ID: ${uid}\\nContact: ${contact}\\nEmail: ${email}\\nBalance: ₹${bal}`);
+        alert(`Your Profile:\nUser Name: ${name}\nUser ID: ${uid}\nContact: ${contact}\nEmail: ${email}\nBalance: ₹${bal}`);
       });
     }
 
@@ -1059,7 +1112,7 @@ if ('serviceWorker' in navigator) {
           gameHtml += '<p>No game history found.</p>';
         } else {
           Object.values(gameHistory).forEach(h => {
-            gameHtml += `<p>• ${h.type} of ${h.prize} for ₹${h.amount} in game ${h.gameName} on ${new Date(h.timestamp).toLocaleString()}</p>`;
+            gameHtml += `<p>• ${h.type} of ${h.prize} for ₹${h.amount} in game ${h.gameId} on ${new Date(h.timestamp).toLocaleString()}</p>`;
           });
         }
 
@@ -1074,10 +1127,10 @@ if ('serviceWorker' in navigator) {
 
         const modal = document.createElement('div');
         modal.className = 'modal-backdrop';
-        modal.innerHTML = `<div class=\"modal\" style=\"text-align:left;\">
-            <div class=\"row\" style=\"justify-content:space-between; align-items:center;\">
+        modal.innerHTML = `<div class="modal" style="text-align:left;">
+            <div class="row" style="justify-content:space-between; align-items:center;">
                 <h3>History</h3>
-                <button class=\"btn secondary\" onclick=\"document.body.removeChild(this.closest('.modal-backdrop'));\">Close</button>
+                <button class="btn secondary" onclick="document.body.removeChild(this.closest('.modal-backdrop'));">Close</button>
             </div>
             ${gameHtml}
             ${withdrawalHtml}
@@ -1091,15 +1144,18 @@ if ('serviceWorker' in navigator) {
     function attachPresence(){
       try{
         if(myPresence){ myPresence.remove(); myPresence=null; }
-      }catch(e){}\n      const id = localStorage.getItem(LS_UID) || userId || ('guest_'+Math.random().toString(36).slice(2,8));
+      }catch(e){}
+      const id = localStorage.getItem(LS_UID) || userId || ('guest_'+Math.random().toString(36).slice(2,8));
       myPresence = presenceRef.push({id, time:firebase.database.ServerValue.TIMESTAMP});
       myPresence.onDisconnect().remove();
     }
-    presenceRef.on('value',snap=>{\n      const n = snap.numChildren()||0;
+    presenceRef.on('value',snap=>{
+      const n = snap.numChildren()||0;
       if(!activeRoom){
         waitingLiveText.textContent = 'Live Users: ' + n;
         liveDot.style.background = (n>0)?'#00e676':'#bdbdbd';
-      }\n    });
+      }
+    });
 
     /* ================= Auth lifecycle & OTP ================= */
     firebase.auth().onAuthStateChanged(async (u)=>{
@@ -1115,48 +1171,63 @@ if ('serviceWorker' in navigator) {
             showLoginModal(); detailsStep.style.display='block';
           }
           getUserBalance(u.uid).then(bal => document.getElementById('myWinnings').textContent = bal);
-        }catch(e){}\n      }else{
+        }catch(e){}
+      }else{
         ensureGuest(); attachPresence();
-      }\n    });
+      }
+    });
     function ensureRecaptcha(){
       if(!recaptchaVerifier){
         recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size:'normal' });
         recaptchaVerifier.render();
-      }\n    }
-    if(sendOtpBtn) sendOtpBtn.addEventListener('click', async () => {
+      }
+    }
+    if(sendOtpBtn) sendOtpBtn.addEventListener('click', async ()=>{
       try{
         ensureRecaptcha();
         const phone=(phoneInput.value||'').trim();
         if(!phone) return alert('Enter phone (e.g., +91XXXXXXXXXX)');
         confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, recaptchaVerifier);
         alert('OTP sent!');
-      }catch(e){ alert(e.message); }\n    });
-    if(verifyOtpBtn) verifyOtpBtn.addEventListener('click', async ()=>{\n      try{
+      }catch(e){ alert(e.message); }
+    });
+    if(verifyOtpBtn) verifyOtpBtn.addEventListener('click', async ()=>{
+      try{
         if(!confirmationResult) return alert('Send OTP first.');
         const code=(otpInput.value||'').trim(); if(!code) return alert('Enter OTP');
         const result=await confirmationResult.confirm(code);
         const u=result.user; applyAuthUser(u);
         const snap=await db.ref('users/'+u.uid).once('value');
-        if(!snap.exists()){ detailsStep.style.display='block'; }\n        else{
+        if(!snap.exists()){ detailsStep.style.display='block'; }
+        else{
           const data=snap.val(); myName=data.name||'Guest'; myEmail=data.email||''; myContact=u.phoneNumber||data.phone||'';
           setLocalProfile(u.uid,myName,myContact,myEmail); hideLoginModal(); attachPresence(); alert('Login successful!');
-        }\n      }catch(e){ alert(e.message); }\n    });
+        }
+      }catch(e){ alert(e.message); }
+    });
     if(document.getElementById('saveDetailsBtn')){
-      document.getElementById('saveDetailsBtn').addEventListener('click', async ()=>{\n        try{
+      document.getElementById('saveDetailsBtn').addEventListener('click', async ()=>{
+        try{
           const u=firebase.auth().currentUser; if(!u) return alert('Not logged in');
           const name=(nameInput.value||'').trim()||'Guest'; const email=(emailInput.value||'').trim()||''; const phone=u.phoneNumber||'';
           await db.ref('users/'+u.uid).set({name,email,phone,userId:u.uid, balance:0});
           myName=name; myEmail=email; myContact=phone; userId=u.uid;
           setLocalProfile(userId,myName,myContact,myEmail);
           detailsStep.style.display='none'; hideLoginModal(); attachPresence(); alert('Details saved!');
-        }catch(e){ alert(e.message); }\n      });
+        }catch(e){ alert(e.message); }
+      });
     }
 
     /* ================= Share / Withdraw UI ================= */
     if(document.getElementById('withdrawBtn')){
-      withdrawBtn.addEventListener('click', ()=>{\n        if(!(localStorage.getItem(LS_UID) || firebase.auth().currentUser)) { showLoginModal(); return; }\n        withdrawModal.style.display='flex';\n      });
+      withdrawBtn.addEventListener('click', ()=>{
+        if(!(localStorage.getItem(LS_UID) || firebase.auth().currentUser)) { showLoginModal(); return; }
+        withdrawModal.style.display='flex';
+      });
       cancelWithdrawBtn.addEventListener('click', ()=> withdrawModal.style.display='none');
-      submitWithdrawBtn.addEventListener('click', async ()=>{\n        const amt = Number(withdrawAmount.value||0);\n        const dest = (withdrawDest.value||'').trim();
+      submitWithdrawBtn.addEventListener('click', async ()=>{
+        const amt = Number(withdrawAmount.value||0);
+        const dest = (withdrawDest.value||'').trim();
         if(!amt || !dest) return alert('Enter amount and UPI/Phone');
         const uid = localStorage.getItem(LS_UID) || userId || 'guest';
         const name = localStorage.getItem(LS_NAME) || myName || 'Guest';
@@ -1305,7 +1376,7 @@ if ('serviceWorker' in navigator) {
       if(!activeRoom) return alert('Create or Join a room first');
       alert('Payment Successful!');
       const grid = generateTicketMatrix();
-      const serial = Math.floor(100000 + Math.random() * 900000);
+      const serial = Math.floor(Math.random()*100000);
       const uid = localStorage.getItem(LS_UID) || 'guest';
       await db.ref(`rooms/${activeRoom}/players/${uid}`).update({ paid:true, ticket: grid, serial });
       currentGrid = grid;
@@ -1322,7 +1393,7 @@ if ('serviceWorker' in navigator) {
       if(!allPaid) return alert('All players must buy ticket first.');
       const nums = shuffle(Array.from({length:90},(_,i)=>i+1));
       await db.ref(`rooms/${activeRoom}`).update({ status: ROOM_STATUS.START });
-      await db.ref(`rooms/${activeRoom}/draw`).set({ current:null, history:[], startedAt:firebase.database.ServerValue.TIMESTAMP, intervalMs:DRAW_INTERVAL_MS, host: localStorage.getItem(LS_UID)||'host' });
+      await db.ref(`rooms/${activeRoom}/draw`).set({ current:null, history:[], startedAt:Date.now(), intervalMs:DRAW_INTERVAL_MS, host: localStorage.getItem(LS_UID)||'host' });
       let idx=0;
       clearInterval(drawTimer);
       drawTimer = setInterval(async ()=>{
@@ -1338,7 +1409,8 @@ if ('serviceWorker' in navigator) {
         const hist = d.history || [];
         hist.push(n);
         await ref.update({ current:n, history:hist });
-        // No longer need to apply auto tick and claim here since it's handled by the listener in attachRoomListeners
+        applyAutoTickForNumber(n, hist);
+        await tryAutoClaims(activeRoom, currentGrid);
       }, DRAW_INTERVAL_MS);
     }
 
@@ -1357,6 +1429,15 @@ if ('serviceWorker' in navigator) {
       });
     }
 
+    if(createRoomBtn) createRoomBtn.addEventListener('click', createRoom);
+    if(joinRoomBtn) joinRoomBtn.addEventListener('click', ()=> {
+        joinRoomIdInput.style.display = 'block';
+        joinRoomBtn.textContent = 'Join Room';
+        joinRoomBtn.onclick = () => joinRoomById(joinRoomIdInput.value.trim());
+    });
+    if(roomBuyTicketBtn) roomBuyTicketBtn.addEventListener('click', roomBuyTicket);
+    if(startRoomGameBtn) startRoomGameBtn.addEventListener('click', startRoomGame);
+
     /* ================= Initial setup ================= */
 
   ensureGuest();
@@ -1365,17 +1446,121 @@ if ('serviceWorker' in navigator) {
   userTicketContainer.style.display='none';
   latestNumber.textContent='—';
   historyEl.textContent='None';
-  prizesRef.once('value', s => { // Fetch and render prizes on startup
-    const prizes = s.val() || {};
-    renderClaimButtons(prizes);
-  });
   
   /* cleanup listeners on unload */
   window.addEventListener('beforeunload', ()=>{
   try{
   if(myPresence) myPresence.remove();
-  if(activeRoom && userId) db.ref(`rooms/${activeRoom}/players/${userId}`).remove();
-  }catch(e){}\n  });
+  if(activeRoom) db.ref(`rooms/${activeRoom}/players/${(localStorage.getItem(LS_UID)||'guest')}`).remove();
+  }catch(e){}
+  });
+  
+  /* ============ AI VOICE ANNOUNCER ============ */
+  (function(){
+  let VOICE_ENABLED = true;
+  let lastSpoken = null;
+  let _primed = false;
+  
+  // Prime speech (needed for mobile)
+  function primeVoice(){
+  if (_primed) return;
+  try {
+  const dummy = new SpeechSynthesisUtterance('');
+  window.speechSynthesis.speak(dummy);
+  _primed = true;
+  } catch(e){}
+  }
+  window.addEventListener('click', primeVoice, { once:true, passive:true });
+  window.addEventListener('touchstart', primeVoice, { once:true, passive:true });
+  
+  // Dialogues mapping
+  const tambolaDialog = {
+  1: "single number, one, top of the house",
+  3: "single number, three, सब गोलमाल है",
+  4: "single number, four, मुर्गी चोर",
+  5: "single number, five, ये नंबर मुझे दे दे ठाकुर",
+  7: "single number seven, lucky for all, सात फेरे",
+  10: "Badmash",
+  19: "one nine, nineteen, Last of the teen",
+  21: "two one, twenty one, marriageable age",
+  24: "दिल का चोर, two and four, twenty four",
+  25: "silver jubilee",
+  26: "republic day",
+  28: "pull the gate",
+  29: "rise and shine",
+  36: "flirty wife",
+  41: "Alli Baba, चालीस चोर",
+  46: "choke chhke",
+  47: "four and seven, forty seven, Aajadi",
+  48: "door and gate, forty eight",
+  50: "Golden Jubilee",
+  53: "smile is free, five and three, fifty three",
+  65: "लाखों में एक है मेरी wife",
+  66: "all the sixes, six and six, all the six",
+  69: "six and nine, sixty nine, Maje Maro yaro",
+  74: "open the door",
+  75: "shuru karo deive",
+  79: "old wine",
+  82: "down with flu",
+  85: "I still live",
+  90: "last number of the house"
+  };
+  
+  // Speak tambola number
+  window.speakTambolaNumber = function(number) {
+  if (!VOICE_ENABLED || !window.speechSynthesis) return;
+  const msg = new SpeechSynthesisUtterance();
+  msg.text = tambolaDialog[number] || `Number ${number}`;
+  msg.lang = 'en-IN';
+  msg.rate = 1 + Math.random() * 0.2;
+  msg.pitch = 1 + Math.random() * 0.3;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(msg);
+  };
+  
+  window.speakTambolaSentence = function(sentence){
+  if (!VOICE_ENABLED || !window.speechSynthesis) return;
+  const msg = new SpeechSynthesisUtterance(sentence);
+  msg.lang='en-IN';
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(msg);
+  };
+  
+  // Watch #latestNumber text changes to auto speak and auto-tick/claim
+  const target = document.getElementById('latestNumber');
+  if (target) {
+  const obs = new MutationObserver(async () => {
+  const text = target.textContent || '';
+  const match = text.match(/(\d+)/);
+  if (!match) return;
+  const num = parseInt(match[1], 10);
+  if (!num) return;
+  // speak
+  speakTambolaNumber(num);
+  // auto-tick
+  const currentHistoryRef = activeRoom ? db.ref(`rooms/${activeRoom}/draw/history`) : currentGameRef.child('history');
+  const histSnapshot = await currentHistoryRef.once('value');
+  applyAutoTickForNumber(num, histSnapshot.val() || []);
+  // attempt auto-claims
+  await tryAutoClaims();
+  });
+  obs.observe(target, { childList:true, characterData:true, subtree:true });
+  }
+  })();
+  
+  /* Watch Live handler (keeps simple embed) */
+  (function(){
+  watchLiveBtn.addEventListener('click', function(){
+  const VIDEO_ID = "YOUR_YOUTUBE_LIVE_VIDEO_ID"; // REPLACE with your live video ID
+  if(!VIDEO_ID || VIDEO_ID === "YOUR_YOUTUBE_LIVE_VIDEO_ID"){
+  alert("Please set your YouTube Live Video ID in the code (replace YOUR_YOUTUBE_LIVE_VIDEO_ID).");
+  return;
+  }
+  liveFrame.src = "https://www.youtube.com/embed/" + VIDEO_ID + "?autoplay=1&rel=0";
+  liveVideoBox.style.display = "block";
+  watchLiveBtn.style.display = "none";
+  });
+  })();
   
   /* 🎵 Music Control */
   let isUserMuted = false;
@@ -1404,217 +1589,6 @@ if ('serviceWorker' in navigator) {
   musicBtn.style.opacity="0.5";
   }
   });
-
-/* ============ AI VOICE ANNOUNCER ============ */
-(function(){
-    let VOICE_ENABLED = true;
-    let lastSpoken = null;
-    let _primed = false;
-
-    const PRIZE_DIALOGUES = {
-        'Early Five': 'Early five claimed!',
-        'Top Line': 'Top line claimed!',
-        'Middle Line': 'Middle line claimed!',
-        'Bottom Line': 'Bottom line claimed!',
-        'Full House': 'Full house claimed! A big congratulations!',
-        '2nd Full House': 'Second full house claimed!',
-        'Ticket Corner': 'Ticket corner claimed!'
-    };
-
-    // Helper function to render claim buttons dynamically
-    function renderClaimButtons(prizes) {
-        const claimBox = document.getElementById('claimBox');
-        const claimButtonsDiv = claimBox.querySelector('.claim-buttons');
-        if (!claimButtonsDiv) return;
-
-        claimButtonsDiv.innerHTML = ''; // Clear existing buttons
-
-        const buttonOrder = ['Early Five', 'Top Line', 'Middle Line', 'Bottom Line', 'Ticket Corner', 'Full House', '2nd Full House'];
-
-        buttonOrder.forEach(prizeName => {
-            const amount = prizes[prizeName];
-            if (amount !== undefined) {
-                const button = document.createElement('button');
-                button.className = 'claim-button';
-                button.textContent = `${prizeName} ₹${amount}`;
-                button.onclick = () => claimPrize(prizeName, currentTicketGameId, currentGrid);
-                claimButtonsDiv.appendChild(button);
-            }
-        });
-    }
-
-    // Prime speech (needed for mobile)
-    function primeVoice(){
-        if (_primed) return;
-        try {
-            const dummy = new SpeechSynthesisUtterance('');
-            window.speechSynthesis.speak(dummy);
-            _primed = true;
-        } catch(e){}\n    }
-    window.addEventListener('click', primeVoice, { once:true, passive:true });
-    window.addEventListener('touchstart', primeVoice, { once:true, passive:true });
-
-    // Dialogues mapping
-    const tambolaDialog = {
-  1: "single number, one, top of the house, Ek, one",
-  2: "two, two, दो",
-  3: "single number, three, सब गोलमाल है, 3",
-  4: "single number, four, मुर्गी चोर",
-  5: "single number, five, ये नंबर मुझे दे दे ठाकुर",
-  6: "six, छक्का",
-  7: "single number seven, lucky for all, सात फेरे",
-  8: "Auntie is coming!",
-  9: "Naughty number, nine!",
-  10: "A big ten, badmash",
-  11: "one and one, eleven, two legs!",
-  12: "one two, twelve",
-  13: "one three, thirteen, My lovely!",
-  14: "Valentine's Day",
-  15: "one five, fifteen, it's a date",
-  16: "sixteen, sweet sixteen",
-  17: "one seven, seventeen, Sati savitri",
-  18: "one eight, eighteen",
-  19: "one nine, nineteen, last of the teens",
-  20: "two zero, twenty, hum do humare do",
-  21: "two one, twenty one, marriageable age",
-  22: "दो और दो, बाइस, all the twos!",
-  23: "two three, twenty three, two to tango!",
-  24: "dil ka chor, two and four, twenty four",
-  25: "two five, twenty five, silver jubilee",
-  26: "two six, twenty six, republic day",
-  27: "two seven, twenty seven, twenty seven!",
-  28: "two eight, twenty eight, pull the gate!",
-  29: "two nine, twenty nine, rise and shine!",
-  30: "Three zero, thirty, thirty!",
-  31: "three one, thirty one, time for some fun!",
-  32: "three two, thirty two",
-  33: "three and three, thirty three, all the threes!",
-  34: "thirty four, three four, let's play some more!",
-  35: "three five, thirty five",
-  36: "three six, thirty six, dirty tricks!",
-  37: "three seven, thirty seven",
-  38: "three eight, thirty eight",
-  39: "three nine, thirty nine",
-  40: "four zero, forty, chalis chor!",
-  41: "four one, forty one, Alli baba, chalis chor",
-  42: "four two, forty two, fourty two!",
-  43: "four three, forty three",
-  44: "four and four, forty four, all the fours!",
-  45: "four five, forty five, half of ninety",
-  46: "four six, forty six, choke chake!",
-  47: "four seven, forty seven, Aajadi!",
-  48: "four eight, forty eight, door and gate!",
-  49: "four nine, forty nine, time to dine!",
-  50: "five zero, fifty, golden jubilee",
-  51: "five one, fifty one, mummy ki chappal!",
-  52: "five two, fifty two, the number of weeks!",
-  53: "five three, fifty three, smile is free!",
-  54: "four and fifty, bunty and bubly",
-  55: "five five, fifty five, all the fives!",
-  56: "five six, fifty six, the number of states!",
-  57: "five seven, fifty seven",
-  58: "five eight, fifty eight",
-  59: "five nine, fifty nine",
-  60: "six zero, sixty, sixty!",
-  61: "six one, sixty one",
-  62: "six two, sixty two",
-  63: "six three, sixty three, sixty three!",
-  64: "six four, sixty four",
-  65: "six five, sixty five, lakhon mein ek hai meri wife!",
-  66: "six and six, sixty six, all the sixes!",
-  67: "six seven, sixty seven",
-  68: "six eight, sixty eight",
-  69: "six nine, sixty nine, maje maro yaro!",
-  70: "seven zero, seventy, seventy!",
-  71: "seven one, seventy one",
-  72: "seven two, seventy two",
-  73: "seven three, seventy three",
-  74: "seven four, seventy four, open the door!",
-  75: "seven five, seventy five, shuru karo deive!",
-  76: "seven six, seventy six, seven six!",
-  77: "seven seven, seventy seven, all the sevens!",
-  78: "seven eight, seventy eight, seventy eight!",
-  79: "seven nine, seventy nine, old wine!",
-  80: "eight zero, eighty, eighty!",
-  81: "eight one, eighty one",
-  82: "eight two, eighty two, down with flu!",
-  83: "eight three, eighty three",
-  84: "eight four, eighty four",
-  85: "eight five, eighty five, I still live!",
-  86: "eight six, eighty six",
-  87: "eight seven, eighty seven",
-  88: "eight eight, eighty eight, all the eights!",
-  89: "eight nine, eighty nine",
-  90: "nine zero, ninety, last number of the house"
-    };
-
-    // Speak tambola number
-    window.speakTambolaNumber = function(number) {
-        if (!VOICE_ENABLED || !window.speechSynthesis) return;
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = tambolaDialog[number] || `Number ${number}`;
-        msg.lang = 'en-IN';
-        msg.rate = 1 + Math.random() * 0.2;
-        msg.pitch = 1 + Math.random() * 0.3;
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(msg);
-    };
-
-    window.speakTambolaSentence = function(sentence){
-        if (!VOICE_ENABLED || !window.speechSynthesis) return;
-        const msg = new SpeechSynthesisUtterance(sentence);
-        msg.lang='en-IN';
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(msg);
-    };
-
-    // Watch #latestNumber text changes to auto speak and auto-tick/claim
-    const target = document.getElementById('latestNumber');
-    if (target) {
-        const obs = new MutationObserver(async (mutations) => {
-            const text = target.textContent || '';
-            const match = text.match(/(\d+)/);
-            if (!match) return;
-            const num = parseInt(match[1], 10);
-            if (!num || lastSpoken === num) return;
-            lastSpoken = num;
-
-            // Check if a claim was made for this number
-            const gameId = activeRoom || 'global-game';
-            const claimsSnap = await claimsRef.child(gameId).once('value');
-            const claimedPrizes = Object.values(claimsSnap.val() || {});
-
-            const newlyClaimedPrize = claimedPrizes.find(claim => {
-                return claim.timestamp > (Date.now() - 5000) && claim.timestamp < Date.now();
-            });
-
-            if (newlyClaimedPrize) {
-                const prizeDialogue = PRIZE_DIALOGUES[newlyClaimedPrize.prizeName];
-                if (prizeDialogue) {
-                    speakTambolaSentence(prizeDialogue);
-                }
-            } else {
-                speakTambolaNumber(num);
-            }
-        });
-        obs.observe(target, { childList: true, characterData: true, subtree: true });
-    }
-
-})();
-
-/* Watch Live handler (keeps simple embed) */
-(function(){
-  watchLiveBtn.addEventListener('click', function(){
-  const VIDEO_ID = "YOUR_YOUTUBE_LIVE_VIDEO_ID"; // REPLACE with your live video ID
-  if(!VIDEO_ID || VIDEO_ID === "YOUR_YOUTUBE_LIVE_VIDEO_ID"){
-  alert("Please set your YouTube Live Video ID in the code (replace YOUR_YOUTUBE_LIVE_VIDEO_ID).");
-  return;
-  }
-  liveFrame.src = "https://www.youtube.com/embed/" + VIDEO_ID + "?autoplay=1&rel=0";
-  liveVideoBox.style.display = "block";
-  watchLiveBtn.style.display = "none";
-  });
-})();
 
 </script>
 </body>
