@@ -604,15 +604,14 @@ if ('serviceWorker' in navigator) {
     /* ====================================================== */
     /* 🔥🔥🔥 APNI FIREBASE CONFIGURATION YAHAN PASTE KAREN 🔥🔥🔥 */
     /* ====================================================== */
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
     const firebaseConfig = {
-     apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
-     authDomain: "tambola69-9dc8f.firebaseapp.com",
-     projectId: "tambola69-9dc8f",
-     storageBucket: "tambola69-9dc8f.firebasestorage.app",
-     messagingSenderId: "413290158586",
-     appId: "1:413290158586:web:70fff2d94b29206487ec43",
-     measurementId: "G-6WJNDX5DGB"
+      apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+      authDomain: "tambola69-9dc8f.firebaseapp.com",
+      projectId: "tambola69-9dc8f",
+      storageBucket: "tambola69-9dc8f.firebasestorage.app",
+      messagingSenderId: "413290158586",
+      appId: "1:413290158586:web:70fff2d94b29206487ec43",
+      measurementId: "G-6WJNDX5DGB"
     };
 
     if (!firebase.apps.length) {
@@ -1348,81 +1347,6 @@ if ('serviceWorker' in navigator) {
           }
         });
 
-        /* ================= Auth lifecycle & OTP ================= */
-        firebase.auth().onAuthStateChanged(async (u)=>{
-          if(u){
-            applyAuthUser(u); attachPresence();
-            // Hide animation/login screen
-            document.getElementById('animationContainer').style.display = 'none';
-            document.getElementById('animationLoginBox').style.display = 'none';
-            document.body.style.backgroundColor = '#f0f2f5';
-            document.getElementById('mainAppContent').style.display = 'block';
-
-            try{
-              const snap = await db.ref('users/'+u.uid).once('value');
-              const data = snap.val();
-              if(data){
-                myName = data.name || myName; myEmail = data.email || myEmail; myContact = u.phoneNumber || data.phone || myContact;
-                setLocalProfile(u.uid, myName, myContact, myEmail);
-              }else{
-                showLoginModal(); detailsStep.style.display='block';
-              }
-              getUserBalance(u.uid).then(bal => document.getElementById('myWinnings').textContent = bal);
-            }catch(e){}
-          }else{
-            ensureGuest(); attachPresence();
-          }
-        });
-
-        // Modified showLoginModal to also handle the animation's login box
-        function showLoginModal(){
-          loginModal.style.display='flex';
-          ensureRecaptcha();
-          document.getElementById('animationLoginBox').style.display = 'none';
-        }
-
-        function ensureRecaptcha(){
-          if(!recaptchaVerifier){
-            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size:'normal' });
-            recaptchaVerifier.render();
-          }
-        }
-        if(sendOtpBtn) sendOtpBtn.addEventListener('click', async ()=>{
-          try{
-            ensureRecaptcha();
-            const phone=(phoneInput.value||'').trim();
-            if(!phone) return alert('Enter phone (e.g., +91XXXXXXXXXX)');
-            confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, recaptchaVerifier);
-            alert('OTP sent!');
-          }catch(e){ alert(e.message); }
-        });
-        if(verifyOtpBtn) verifyOtpBtn.addEventListener('click', async ()=>{
-          try{
-            if(!confirmationResult) return alert('Send OTP first.');
-            const code=(otpInput.value||'').trim(); if(!code) return alert('Enter OTP');
-            const result=await confirmationResult.confirm(code);
-            const u=result.user; applyAuthUser(u);
-            const snap=await db.ref('users/'+u.uid).once('value');
-            if(!snap.exists()){ detailsStep.style.display='block'; }
-            else{
-              const data=snap.val(); myName=data.name||'Guest'; myEmail=data.email||''; myContact=u.phoneNumber||data.phone||'';
-              setLocalProfile(u.uid,myName,myContact,myEmail); hideLoginModal(); attachPresence(); alert('Login successful!');
-            }
-          }catch(e){ alert(e.message); }
-        });
-        if(document.getElementById('saveDetailsBtn')){
-          document.getElementById('saveDetailsBtn').addEventListener('click', async ()=>{
-            try{
-              const u=firebase.auth().currentUser; if(!u) return alert('Not logged in');
-              const name=(nameInput.value||'').trim()||'Guest'; const email=(emailInput.value||'').trim()||''; const phone=u.phoneNumber||'';
-              await db.ref('users/'+u.uid).set({name,email,phone,userId:u.uid, balance:0});
-              myName=name; myEmail=email; myContact=phone; userId=u.uid;
-              setLocalProfile(userId,myName,myContact,myEmail);
-              detailsStep.style.display='none'; hideLoginModal(); attachPresence(); alert('Details saved!');
-            }catch(e){ alert(e.message); }
-          });
-        }
-
         /* ================= Share / Withdraw UI ================= */
         if(document.getElementById('withdrawBtn')){
           withdrawBtn.addEventListener('click', ()=>{
@@ -1798,66 +1722,139 @@ if ('serviceWorker' in navigator) {
     const spinnerNumber = document.querySelector('.spinner-number');
     const finalNumber = document.querySelector('.final-number');
     const mainAppContent = document.getElementById('mainAppContent');
+    
+    // --- START OF MOVED CODE ---
+    // Moved the authentication and modal logic here so it's always available
+    const loginModal = document.getElementById('loginModal');
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const detailsStep = document.getElementById('detailsStep');
+    const nameInput = document.getElementById('nameInput');
+    const emailInput = document.getElementById('emailInput');
+    const phoneInput = document.getElementById('phoneInput');
+    const otpInput = document.getElementById('otpInput');
+    let recaptchaVerifier=null, confirmationResult=null;
+
+    function showLoginModal(){
+        loginModal.style.display='flex';
+        ensureRecaptcha();
+    }
+    
+    function hideLoginModal(){ loginModal.style.display='none'; }
+    
+    function ensureRecaptcha(){
+        if(!recaptchaVerifier){
+            recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size:'normal' });
+            recaptchaVerifier.render();
+        }
+    }
+
+    if (sendOtpBtn) sendOtpBtn.addEventListener('click', async ()=>{
+        try{
+            ensureRecaptcha();
+            const phone=(phoneInput.value||'').trim();
+            if(!phone) return alert('Enter phone (e.g., +91XXXXXXXXXX)');
+            confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, recaptchaVerifier);
+            alert('OTP sent!');
+        }catch(e){ alert(e.message); }
+    });
+    
+    if (verifyOtpBtn) verifyOtpBtn.addEventListener('click', async ()=>{
+        try{
+            if(!confirmationResult) return alert('Send OTP first.');
+            const code=(otpInput.value||'').trim(); if(!code) return alert('Enter OTP');
+            const result=await confirmationResult.confirm(code);
+            const u=result.user;
+            const snap=await db.ref('users/'+u.uid).once('value');
+            if(!snap.exists()){ detailsStep.style.display='block'; }
+            else{ hideLoginModal(); }
+        }catch(e){ alert(e.message); }
+    });
+
+    if (document.getElementById('saveDetailsBtn')) {
+        document.getElementById('saveDetailsBtn').addEventListener('click', async ()=>{
+            try{
+                const u=firebase.auth().currentUser; if(!u) return alert('Not logged in');
+                const name=(nameInput.value||'').trim()||'Guest'; const email=(emailInput.value||'').trim()||''; const phone=u.phoneNumber||'';
+                await db.ref('users/'+u.uid).set({name,email,phone,userId:u.uid, balance:0});
+                detailsStep.style.display='none'; hideLoginModal();
+                alert('Details saved! You can now access the full app.');
+            }catch(e){ alert(e.message); }
+        });
+    }
+
+    // Now, attach the listener to the "Sign in with Email" button in the animationLoginBox
+    document.querySelector('.login-button.email-btn').addEventListener('click', () => {
+        gsap.to(animationLoginBox, {autoAlpha: 0, scale: 0.9, duration: 0.5, onComplete: () => {
+            animationLoginBox.style.display = 'none';
+            showLoginModal();
+        }});
+    });
+    // --- END OF MOVED CODE ---
 
     // Check if a user is already logged in from a previous session
-    const storedUserId = localStorage.getItem('tambola_user_v2');
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        // User is authenticated, proceed to the main app
+        animationContainer.style.display = 'none';
+        animationLoginBox.style.display = 'none';
+        document.body.style.backgroundColor = '#f0f2f5';
+        initializeMainApp();
+      } else {
+        // No user is logged in, show the animation and login box
+        const storedUserId = localStorage.getItem('tambola_user_v2');
+        if (storedUserId) {
+            // A guest user exists, skip the animation
+            animationContainer.style.display = 'none';
+            animationLoginBox.style.display = 'none';
+            document.body.style.backgroundColor = '#f0f2f5';
+            initializeMainApp();
+        } else {
+            // No user or guest, start the full animation flow
+            document.body.style.backgroundColor = '#2c3e50';
+            animationContainer.style.display = 'block';
 
-    if (storedUserId) {
-      // User is already logged in, so skip the animation
-      animationContainer.style.display = 'none';
-      animationLoginBox.style.display = 'none';
-      document.body.style.backgroundColor = '#f0f2f5';
-      initializeMainApp();
-    } else {
-      // User is not logged in, show the animation and login box
-      document.body.style.backgroundColor = '#2c3e50';
-      animationContainer.style.display = 'block';
+            function confetti() {
+              for(let i=0;i<100;i++){
+                  let div=document.createElement('div');
+                  div.style.position='absolute';
+                  div.style.width=div.style.height=`${Math.random()*8+4}px`;
+                  div.style.background=`hsl(${Math.random()*360},100%,50%)`;
+                  div.style.top='50%';
+                  div.style.left='50%';
+                  div.style.borderRadius='50%';
+                  document.body.appendChild(div);
+                  gsap.to(div,{x:(Math.random()-0.5)*500,y:(Math.random()-0.5)*500,duration:2,opacity:0,ease:"power1.out",onComplete:()=>div.remove()});
+              }
+            }
+            gsap.set(ticketAnimation, {scale:0, opacity:0});
+            gsap.set(finalNumber, {scale:0, opacity:0});
 
-      // GSAP animation logic
-      function confetti() {
-        for(let i=0;i<100;i++){
-            let div=document.createElement('div');
-            div.style.position='absolute';
-            div.style.width=div.style.height=`${Math.random()*8+4}px`;
-            div.style.background=`hsl(${Math.random()*360},100%,50%)`;
-            div.style.top='50%';
-            div.style.left='50%';
-            div.style.borderRadius='50%';
-            document.body.appendChild(div);
-            gsap.to(div,{x:(Math.random()-0.5)*500,y:(Math.random()-0.5)*500,duration:2,opacity:0,ease:"power1.out",onComplete:()=>div.remove()});
+            const tl=gsap.timeline({defaults:{duration:1,ease:"power2.inOut"}});
+            tl.to(ticketAnimation, {scale:1, opacity:1, duration:1.5, ease:"back.out(1.7)"})
+              .to(spinnerContainer, {autoAlpha:1, scale:1, duration:0.8},"-=0.5");
+
+            tl.to({}, {duration:4, onUpdate:()=> {
+                spinnerNumber.textContent = Math.floor(Math.random()*90)+1;
+            }});
+
+            tl.to({}, {duration:0.5, onComplete:()=>{
+                spinnerNumber.textContent = "69";
+            }})
+            .to(finalNumber, {opacity:1, scale:1, y:0, duration:0.5, ease:"back.out(1.7)"})
+            .to(finalNumber, {scale:1, duration:0.3, ease:"elastic.out(1,0.3)", onComplete:confetti})
+            .to(spinnerContainer, {autoAlpha:0, scale:0.5, duration:1},"-=1.5");
+
+            tl.add(function(){
+                gsap.to(animationContainer, {autoAlpha:0, scale:0.9, duration:1, onComplete:()=>{
+                    animationContainer.style.display='none';
+                    animationLoginBox.style.display='block';
+                    gsap.to(animationLoginBox, {autoAlpha:1, scale:1, duration:1.5, ease:"power2.out"});
+                }});
+            },"+=1");
         }
       }
-
-      gsap.set(ticketAnimation, {scale:0, opacity:0});
-      gsap.set(finalNumber, {scale:0, opacity:0});
-
-      const tl=gsap.timeline({defaults:{duration:1,ease:"power2.inOut"}});
-      tl.to(ticketAnimation, {scale:1, opacity:1, duration:1.5, ease:"back.out(1.7)"})
-        .to(spinnerContainer, {autoAlpha:1, scale:1, duration:0.8},"-=0.5");
-
-      // Spinner number animation
-      tl.to({}, {duration:4, onUpdate:()=> {
-          spinnerNumber.textContent = Math.floor(Math.random()*90)+1;
-      }});
-
-      // Jump final number
-      tl.to({}, {duration:0.5, onComplete:()=>{
-          spinnerNumber.textContent = "69"; // final number
-      }})
-      .to(finalNumber, {opacity:1, scale:1, y:0, duration:0.5, ease:"back.out(1.7)"})
-      .to(finalNumber, {scale:1, duration:0.3, ease:"elastic.out(1,0.3)", onComplete:confetti})
-      .to(spinnerContainer, {autoAlpha:0, scale:0.5, duration:1},"-=1.5");
-
-      // Show login
-      tl.add(function(){
-          gsap.to(animationContainer, {autoAlpha:0, scale:0.9, duration:1, onComplete:()=>{
-              animationContainer.style.display='none';
-              animationLoginBox.style.display='block';
-              gsap.to(animationLoginBox, {autoAlpha:1, scale:1, duration:1.5, ease:"power2.out"});
-          }});
-      },"+=1");
-
-    }
+    });
 
 </script>
 </body>
