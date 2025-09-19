@@ -45,15 +45,17 @@
 
 <script>
 
-var firebaseConfig = {
-   apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
-   authDomain: "tambola69-9dc8f.firebaseapp.com",
-   projectId: "tambola69-9dc8f",
-   storageBucket: "tambola69-9dc8f.firebasestorage.app",
-   messagingSenderId: "413290158586",
-   appId: "1:413290158586:web:70fff2d94b29206487ec43",
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+  authDomain: "tambola69-9dc8f.firebaseapp.com",
+  databaseURL: "https://tambola69-9dc8f-default-rtdb.firebaseio.com",
+  projectId: "tambola69-9dc8f",
+  storageBucket: "tambola69-9dc8f.firebasestorage.app",
+  messagingSenderId: "413290158586",
+  appId: "1:413290158586:web:c4c6d6d224c96a7487ec43",
+  measurementId: "G-TM68JPXH18"
 };
-
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
     console.log("Firebase connection successful!");
@@ -97,7 +99,7 @@ function refFor(key){
 
 function startCountdown(key, duration) {
     let timerRef = refFor(key).child('countdown');
-    let timeLeft = duration;
+    let teLeft = duration;
     
     clearInterval(countdownIntervals[key]);
 
