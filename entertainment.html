@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <title>Tambola 69 - User</title>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2196f3">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111111"/>
@@ -2104,6 +2106,12 @@ const storageRef = storage.ref();
     }
   }
 
+</script>
+    <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/service-worker.js")
+      .then(() => console.log("Service Worker registered"));
+  }
 </script>
   
 </body>
