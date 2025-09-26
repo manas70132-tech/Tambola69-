@@ -1,7 +1,7 @@
 /* ====================================================== */
 /* 🔥🔥🔥 PASTE YOUR FIREBASE CONFIG HERE 🔥🔥🔥        */
 /* ====================================================== */
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
 const firebaseConfig = {
     apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
     authDomain: "tambola69-9dc8f.firebaseapp.com",
