@@ -1,3 +1,5 @@
 your-project/
 public/
 icons/
+public/icons/,logo-192.png
+public/icons/logo-512.png
