@@ -1,38 +1,37 @@
-// sw.js
-const CACHE_NAME = 'pwa-cache-v1';
-const urlsToCache = [
+           const CACHE_NAME = 'tambola69-v1';
+const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/app.js',
+  '/offline.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
+  // add other static assets you want cached (css, js, images)
 ];
 
-// Install event: Cache the specified files
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE))
   );
+  self.skipWaiting();
 });
 
-// Activate event: Clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.filter(name => name !== CACHE_NAME)
-          .map(name => caches.delete(name))
-      );
-    })
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      }))
+    )
   );
+  self.clients.claim();
 });
 
-// Fetch event: Serve cached content or fetch from network
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
+    caches.match(event.request).then(cachedResp => {
+      if (cachedResp) return cachedResp;
+      return fetch(event.request).catch(() => caches.match('/offline.html'));
+    })
   );
 });
