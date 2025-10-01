@@ -1,11 +1,12 @@
 
 {
-  "name": "My PWA",
-  "short_name": "PWA",
-  "start_url": "/",
+  "name": "Tambola 69",
+  "short_name": "Tambola 69",
+  "description": "आपका तंबोला गेम",
+  "start_url": "/?source=pwa", 
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#007bff",
+  "theme_color": "#ff6600",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
