@@ -931,6 +931,38 @@
     
     if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
+        async function uploadProfileImage() {
+  const fileInput = document.getElementById('profileImage');
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Please select a file");
+    return;
+  }
+
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("User not logged in");
+    return;
+  }
+
+  const storageRef = firebase.storage().ref(`Profile_image/${user.uid}/${file.name}`);
+
+  try {
+    const snapshot = await storageRef.put(file);
+    const url = await snapshot.ref.getDownloadURL();
+
+    // Realtime DB or Firestore me save karna
+    await firebase.database().ref(`users/${user.uid}`).update({
+      profileImage: url
+    });
+
+    alert("Profile image saved successfully!");
+  } catch (error) {
+    console.error("Error uploading:", error);
+    alert("Upload failed");
+  }
+}
     console.log("Firebase connection successful!");
     } else {
     console.log("Firebase app already running.");
