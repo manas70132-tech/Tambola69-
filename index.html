@@ -932,8 +932,7 @@
    // Initialize Firebase
    const app = firebase.initializeApp(firebaseConfig);
    const db = firebase.database();
-   const storage = firebase.storage();
-   const storageRef = storage.ref();
+   const storageRef = firebase.storage().ref(`Profile_image/${user.uid}/${file.name}`);
 
     /* ================= Elements ================= */
     const tambolaBoardEl = document.getElementById('tambola-board');
