@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile Upload - Firebase</title>
+</head>
+<body style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+
+  <h2>Upload Profile Image</h2>
+
+  <input type="file" id="profileImage" accept="image/*" />
+  <br><br>
+  <button id="uploadBtn">Upload Profile</button>
+
+  <p id="status"></p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+    // 🔧 Replace with your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAphHTM4faH7_FVXdnootp4NipZd3vtEck",
+      authDomain: "tambola69-9dc8f.firebaseapp.com",
+      databaseURL: "https://tambola69-9dc8f-default-rtdb.firebaseio.com",
+      projectId: "tambola69-9dc8f",
+      storageBucket: "tambola69-9dc8f.firebasestorage.app",
+      messagingSenderId: "413290158586",
+      appId: "1:413290158586:web:c4c6d6d224c96a7487ec43",
+      measurementId: "G-TM68JPXH18"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const storage = getStorage(app);
+
+    const uploadBtn = document.getElementById("uploadBtn");
+    const status = document.getElementById("status");
+
+    uploadBtn.addEventListener("click", async () => {
+      const file = document.getElementById("profileImage").files[0];
+      if (!file) return alert("Please select an image!");
+
+      const user = auth.currentUser;
+      if (!user) return alert("Please log in first!");
+
+      const imageRef = sRef(storage, `Profile_image/${user.uid}/${file.name}`);
+
+      try {
+        status.innerText = "Uploading...";
+        await uploadBytes(imageRef, file);
+        const url = await getDownloadURL(imageRef);
+
+        await set(ref(db, `users/${user.uid}/profile`), {
+          name: user.displayName || "Unknown",
+          email: user.email,
+          photoURL: url
+        });
+
+        status.innerText = "✅ Upload successful!";
+        console.log("Image URL:", url);
+      } catch (err) {
+        console.error(err);
+        status.innerText = "❌ Error: " + err.message;
+      }
+    });
+
+    // Optional: show if user logged in
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        status.innerText = `Logged in as: ${user.email}`;
+      } else {
+        status.innerText = "Please log in before uploading.";
+      }
+    });
+  </script>
+
+</body>
+</html>
