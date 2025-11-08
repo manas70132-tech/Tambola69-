@@ -1099,7 +1099,15 @@
     const db = firebase.database();
     const storage = firebase.storage();
     const storageRef = storage.ref();
-
+// User App में यह कोड डालें
+firebase.database().ref('currentGame/unclaimedPrizeBox').on('value', snap => {
+  const enabled = snap.val() === true;
+  const claimBtn = document.getElementById('claimPrizeBtn'); // आपका बटन ID
+  if (claimBtn) {
+    claimBtn.disabled = !enabled;
+    claimBtn.style.display = enabled ? 'block' : 'none';
+  }
+});
     /* ================= Elements ================= */
     const tambolaBoardEl = document.getElementById('tambola-board');
     const ticketEl = document.getElementById('ticket');
